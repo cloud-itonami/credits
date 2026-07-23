@@ -17,9 +17,13 @@ TitheRouter are optional boundary adapters, not the monetary source of truth.
 - [x] Ed25519 verifier + device key envelope (WebAuthn adapter remains R2).
 - [x] Full untrusted-journal replay + deterministic state root.
 - [x] Contiguous participant nonce and fail-closed event dispatch.
-- [ ] Append-only kotoba/AT journal owned by each participant.
-- [ ] Gossip/merge and deterministic checkpoint root.
-- [ ] Offline three-device pilot; no etzhayyim server in the transaction path.
+- [x] In-memory participant/device journal with deterministic dependency merge.
+- [x] Three-device offline convergence simulation; relay order has no authority.
+- [x] Concurrent offline-spend quarantine (never arrival-time winner selection).
+- [x] Guardian-threshold device-key recovery and replay protection.
+- [ ] Durable append-only kotoba/AT journal owned by each participant.
+- [ ] Replaceable gossip relay transport and signed regional checkpoint.
+- [ ] Physical offline three-device field pilot; no etzhayyim server in path.
 - [ ] Retire legacy graph.write earn/spend pipelines after export/reconciliation.
 - [ ] Make Kisha a Commons issuance policy; remove Phenotype from basic provision.
 

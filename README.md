@@ -39,6 +39,12 @@ multi-role Commons decision. Every client can replay the same event set and reje
 a checkpoint where mutual-credit net supply is non-zero or a participant exceeds
 their relational credit limit.
 
+R1 adds canonical encoding, content-derived ids, real Ed25519 evidence, and full
+untrusted replay. R2 adds participant/device journals, dependency-ordered merge,
+three-device convergence, explicit quarantine of concurrent offline spends, and
+guardian-threshold device-key recovery. A relay's arrival order never selects a
+winning spend.
+
 ## Integration direction
 
 1. Each participant stores their signed events in their own append-only kotoba/AT
@@ -50,7 +56,7 @@ their relational credit limit.
 5. Existing USDC/Kisha/GCC paths remain migration adapters only. They are not the
    ENGI source of truth.
 
-R0 deliberately does not pretend to provide physical enforcement, legal tender
-status, Sybil-proof personhood, or production key recovery. The next integration
-gate is a real Ed25519/passkey envelope and kotoba journal adapter, followed by an
-offline three-device field pilot.
+The implementation does not pretend to provide physical enforcement, legal tender
+status, or Sybil-proof personhood. The next integration gate is durable
+participant-owned kotoba journals plus replaceable relay transport and signed
+regional checkpoints.
