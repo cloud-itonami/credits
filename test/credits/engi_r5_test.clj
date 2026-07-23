@@ -1,5 +1,6 @@
 (ns credits.engi-r5-test
   (:require [clojure.test :refer [deftest is testing]]
+            [credits.engi.crypto :as crypto]
             [credits.engi.migration :as migration]
             [credits.engi.netting :as netting]))
 
@@ -37,17 +38,39 @@
     (is (zero? (reduce + (vals (:positions proposal)))))))
 
 (deftest legacy-balance-is-opt-in-evidence-never-automatic-en
-  (let [input {:subject "did:alice" :legacy-balance 700
+  (let [keys (crypto/generate-keypair)
+        public-key (fn [did]
+                     (when (= did "did:alice") (:public-key keys)))
+        template (migration/consent-event
+                  {:subject "did:alice"
+                   :legacy-ledger-root "bafy-ledger-export"
+                   :consented-at "2026-07-23T12:00:00Z"})
+        consent (update template :consents
+                        (fn [[statement]]
+                          [(crypto/sign-evidence
+                            template statement (:private-key keys))]))
+        input {:subject "did:alice" :legacy-balance 700
                :evidence-cids ["bafy-ledger-export"]
-               :consent? true :exported-at "2026-07-23"}
-        result (migration/export-claim input)
+               :consent consent :exported-at "2026-07-23"}
+        result (migration/export-claim input public-key)
         claim (:claim result)]
     (is (:ok? result))
     (is (= 0 (:monetary-effect claim)))
     (is (= :pending-commons-review (:status claim)))
-    (is (= :participant-consent-required
+    (is (= :cryptographic-participant-consent-required
            (:error (migration/export-claim
-                    (assoc input :consent? false)))))
+                    (assoc input :consent nil) public-key))))
+    (is (= :cryptographic-participant-consent-required
+           (:error (migration/export-claim
+                    (assoc-in input [:consent :legacy-ledger-root]
+                              "bafy-other")
+                    public-key))))
+    (is (= 0 (:automatic-en-effect
+              (migration/reconcile-claims
+               "bafy-ledger-export" [claim]))))
+    (is (= :duplicate-participant-claim
+           (:error (migration/reconcile-claims
+                    "bafy-ledger-export" [claim claim]))))
     (testing "Commons decides a bounded amount; 700 is not auto-minted"
       (let [proposal
             (migration/to-commons-proposal-input

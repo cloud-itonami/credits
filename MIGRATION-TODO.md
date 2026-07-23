@@ -14,7 +14,7 @@ TitheRouter are optional boundary adapters, not the monetary source of truth.
 - [x] Replay protection and zero-net-supply invariant.
 - [x] Bounded Commons issuance with heterogeneous role quorum.
 - [x] Canonical event encoding + content hash test vectors (Clojure R1).
-- [x] Ed25519 verifier + device key envelope (WebAuthn adapter remains R2).
+- [x] Ed25519 verifier + device key envelope + WebAuthn replay adapter.
 - [x] Full untrusted-journal replay + deterministic state root.
 - [x] Contiguous participant nonce and fail-closed event dispatch.
 - [x] In-memory participant/device journal with deterministic dependency merge.
@@ -36,6 +36,8 @@ TitheRouter are optional boundary adapters, not the monetary source of truth.
 - [ ] Physical offline three-device field pilot; no etzhayyim server in path.
 - [x] Disable legacy actor and remove advertised `graph.write` capability.
 - [x] Legacy balance export is opt-in evidence with zero automatic EN effect.
+- [x] Replace boolean consent with participant-signed, ledger-root-bound consent.
+- [x] Fail-closed non-monetary reconciliation manifest for consented claims.
 - [x] Route an accepted legacy claim through bounded Commons deliberation.
 - [x] Source-diverse living-basket index + explicit-rounding region conversion.
 - [x] Multilateral regional netting with zero-sum conservation.

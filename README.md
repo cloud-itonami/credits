@@ -54,7 +54,9 @@ appeal juries.
 R5 adds source-diverse regional living-basket indices, explicit-rounding
 cross-region conversion, conservative multilateral netting, and opt-in legacy
 claims. A legacy credit balance has zero monetary effect until Commons review;
-the disabled legacy actor no longer advertises `graph.write`.
+the disabled legacy actor no longer advertises `graph.write`. Consent is a
+participant-signed event bound to the exported ledger root, not an
+administrator-set boolean.
 
 R6 adds an independent dependency-free Node.js verifier, cross-client canonical
 and Ed25519 vectors, protocol audits, corrupt/Byzantine input rejection, and a

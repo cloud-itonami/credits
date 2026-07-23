@@ -51,6 +51,10 @@ replay result.
 - Multilateral netting conserves value: regional positions always sum to zero.
 - Legacy balances migrate only with participant consent, initially have zero
   monetary effect, and can become EN only through bounded Commons review.
+- Consent is a participant-signed event bound to the legacy ledger root and the
+  scope `evidence-only-no-automatic-en`; an operator-side boolean is invalid.
+  Reconciliation rejects duplicate participants and always reports zero
+  automatic EN effect.
 - The legacy central actor is disabled and does not advertise graph writes.
 
 ## R6 — independent verification and audit
