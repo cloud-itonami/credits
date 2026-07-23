@@ -2,6 +2,7 @@
   "Reproducible protocol audit bundle."
   (:require [clojure.string :as str]
             [credits.engi.codec :as codec]
+            [credits.engi.replay :as replay]
             [credits.methods.engi :as engi]))
 
 (defn audit-state [state]
@@ -23,6 +24,21 @@
      :unique-event-ids? unique-event-ids?
      :unique-nonces? unique-nonces?
      :event-ids-valid? event-ids-valid?}))
+
+(defn audit-state-against-replay
+  "Cryptographically replay every retained event and require the supplied
+  snapshot to be byte-for-byte equivalent as Clojure data. A structurally
+  plausible balance map is not audit evidence."
+  [state resolve-public-key]
+  (let [structural (audit-state state)
+        replayed (replay/replay (:accepted-events state) resolve-public-key)
+        state-matches? (and (:ok? replayed) (= state (:state replayed)))]
+    (assoc structural
+           :ok? (and (:ok? structural) (:ok? replayed) state-matches?)
+           :cryptographic-replay-ok? (boolean (:ok? replayed))
+           :state-matches-replay? state-matches?
+           :state-root (:state-root replayed)
+           :replay-error (:error replayed))))
 
 (defn audit-legacy-manifest [manifest-text]
   (let [disabled? (boolean (re-find #"\"enabled\"\s*:\s*false"

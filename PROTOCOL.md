@@ -75,6 +75,9 @@ replay result.
 - Cross-client vectors are tested against the Clojure implementation.
 - The audit checks conservation, unique ids/nonces, event content ids, and
   legacy central-writer shutdown.
+- Snapshot audit additionally performs full signature/causal replay of retained
+  events and requires exact reconstructed-state equality. A forged snapshot
+  that preserves net-zero balances still fails.
 - Corrupt journal lines, missing parents, event-id collisions, tampering,
   unknown event kinds, stale key recovery, insufficient juries, and concurrent
   spends are fail-closed test cases.

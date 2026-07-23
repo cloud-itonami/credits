@@ -52,6 +52,7 @@ TitheRouter are optional boundary adapters, not the monetary source of truth.
 - [x] Independent Node.js canonical-id and Ed25519 verifier.
 - [x] Cross-client test vectors.
 - [x] Reproducible protocol/legacy-manifest audit.
+- [x] Cryptographic full-replay snapshot equivalence audit.
 - [x] Corruption, tamper, missing-parent, fork, replay and quorum failure tests.
 - [x] 100,000-transition JVM benchmark with conservation check.
 - [x] WebAuthn browser assertion + independent verifier bind ENGI evidence to
