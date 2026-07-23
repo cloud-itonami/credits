@@ -10,6 +10,8 @@ TitheRouter are optional boundary adapters, not the monetary source of truth.
 
 - [x] Pure replayable mutual-credit state machine.
 - [x] Bilateral signatures required at the state-machine boundary.
+- [x] Asynchronous multi-party proof enrichment without relay winner selection.
+- [x] Preserve competing proofs so invalid-first relay poisoning cannot block.
 - [x] Relational credit limit from independently signed endorsements.
 - [x] Replay protection and zero-net-supply invariant.
 - [x] Bounded Commons issuance with heterogeneous role quorum.

@@ -47,17 +47,19 @@
 (defn sha256 [^bytes bs]
   (.digest (MessageDigest/getInstance "SHA-256") bs))
 
-(defn- without-signature [value]
+(def proof-keys #{:signature :event-id :proof})
+
+(defn without-proof [value]
   (cond
     (map? value)
     (into {}
           (keep (fn [[k v]]
-                  (when-not (#{:signature :event-id :proof} k)
-                    [k (without-signature v)])))
+                  (when-not (proof-keys k)
+                    [k (without-proof v)])))
           value)
 
     (vector? value)
-    (mapv without-signature value)
+    (mapv without-proof value)
 
     :else value))
 
@@ -67,7 +69,7 @@
   [event]
   (-> event
       (dissoc :id)
-      without-signature
+      without-proof
       (assoc :protocol/version protocol-version)))
 
 (defn event-id [event]
@@ -85,8 +87,98 @@
   [event evidence]
   (canonical-bytes
    {:protocol/version protocol-version
-    :event (without-signature event)
-    :evidence (without-signature evidence)}))
+    :event (without-proof event)
+    :evidence (without-proof evidence)}))
+
+(def ^:private missing (Object.))
+
+(declare merge-proof-values)
+
+(defn- proof-alternatives [value]
+  (if (vector? value) value [value]))
+
+(defn- merge-proof-field [key left right]
+  (if (= key :event-id)
+    {:ok? false :error :conflicting-event-id-copy}
+    {:ok? true
+     :value (->> (concat (proof-alternatives left)
+                         (proof-alternatives right))
+                 (reduce (fn [values candidate]
+                           (assoc values (canonical-string candidate)
+                                  candidate))
+                         (sorted-map))
+                 vals
+                 vec)}))
+
+(defn- merge-proof-maps [left right]
+  (reduce
+   (fn [result key]
+     (if-not (:ok? result)
+       (reduced result)
+       (let [left-value (get left key missing)
+             right-value (get right key missing)]
+         (cond
+           (proof-keys key)
+           (cond
+             (identical? left-value missing)
+             (assoc-in result [:value key] right-value)
+             (identical? right-value missing) result
+             (= left-value right-value) result
+             :else
+             (let [merged (merge-proof-field key left-value right-value)]
+               (if (:ok? merged)
+                 (assoc-in result [:value key] (:value merged))
+                 (reduced merged))))
+
+           (or (identical? left-value missing)
+               (identical? right-value missing))
+           (reduced {:ok? false :error :economic-content-mismatch})
+
+           :else
+           (let [merged (merge-proof-values left-value right-value)]
+             (if (:ok? merged)
+               (assoc-in result [:value key] (:value merged))
+               (reduced merged)))))))
+   {:ok? true :value left}
+   (into #{} (concat (keys left) (keys right)))))
+
+(defn merge-proof-values [left right]
+  (cond
+    (= left right) {:ok? true :value left}
+    (and (map? left) (map? right)) (merge-proof-maps left right)
+    (and (vector? left) (vector? right) (= (count left) (count right)))
+    (reduce
+     (fn [result [index [left-value right-value]]]
+       (if-not (:ok? result)
+         (reduced result)
+         (let [merged (merge-proof-values left-value right-value)]
+           (if (:ok? merged)
+             (assoc-in result [:value index] (:value merged))
+             (reduced merged)))))
+     {:ok? true :value left}
+     (map-indexed vector (map vector left right)))
+    :else {:ok? false :error :economic-content-mismatch}))
+
+(defn merge-proof-enrichment
+  "Merge two representations of one economic event. Only missing proof fields
+  may be added; economic content and competing proof bytes never overwrite."
+  [left right]
+  (cond
+    (or (not (valid-event-id? left)) (not (valid-event-id? right)))
+    {:ok? false :error :event-id-mismatch}
+
+    (not= (:id left) (:id right))
+    {:ok? false :error :different-event-id}
+
+    (not= (canonical-string (event-id-input left))
+          (canonical-string (event-id-input right)))
+    {:ok? false :error :event-id-collision}
+
+    :else
+    (let [merged (merge-proof-values left right)]
+      (if (:ok? merged)
+        {:ok? true :event (:value merged)}
+        (assoc merged :event-id (:id left))))))
 
 (defn base64url [^bytes bs]
   (.encodeToString (.withoutPadding (Base64/getUrlEncoder)) bs))

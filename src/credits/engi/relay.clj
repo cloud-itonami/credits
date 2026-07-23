@@ -17,12 +17,13 @@
          (reduced {:ok? false :error :event-id-mismatch
                    :event-id (:id event)})
 
-         (and (contains? (:events result) (:id event))
-              (not= (codec/canonical-string event)
-                    (codec/canonical-string
-                     (get-in result [:events (:id event)]))))
-         (reduced {:ok? false :error :event-id-collision
-                   :event-id (:id event)})
+         (contains? (:events result) (:id event))
+         (let [merged
+               (codec/merge-proof-enrichment
+                (get-in result [:events (:id event)]) event)]
+           (if (:ok? merged)
+             (assoc-in result [:events (:id event)] (:event merged))
+             (reduced (assoc merged :event-id (:id event)))))
 
          :else
          (assoc-in result [:events (:id event)] event))))

@@ -82,7 +82,7 @@
         j {:owner-did "did:x" :device-id "x"
            :events {(:id transfer-event) tampered}}
         good (append! (journal/new-journal "did:bob" "b") transfer-event)]
-    (is (= :event-id-collision
+    (is (= :event-id-mismatch
            (:error (journal/merge-journals [j good]))))))
 
 (deftest guardian-recovery-rotates-without-a-central-key-holder

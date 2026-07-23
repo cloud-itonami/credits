@@ -16,6 +16,10 @@ replay result.
   signature bytes and copied event ids are excluded.
 - Evidence uses Ed25519. Transfer requires both parties. Credit lines require
   independent guarantors. Commons uses heterogeneous witnesses.
+- Parties may add missing proofs asynchronously without changing the economic
+  event id. Append-only journals merge proof enrichment, never economic fields.
+  Competing proof bytes are all retained and local replay accepts any valid
+  candidate, preventing a relay from poisoning or selecting the winning proof.
 - Participant nonces are contiguous from 1. Unknown event kinds fail closed.
 
 ## R2 — offline convergence and recovery
@@ -107,6 +111,8 @@ simulation tests pass.
 - The adapter tests start two real loopback HTTP services, distribute different
   objects, tolerate an unreachable third service, gossip the union, restart a
   durable relay, and verify convergence and tamper rejection.
+- Concurrent relay publications are serialized around validation and durable
+  append; a restart test proves that distinct simultaneous events are not lost.
 - `clients/engi-webauthn-browser.mjs` requests a user-verified assertion with
   `SHA-256(canonical evidence payload)` as its challenge.
   `clients/engi-webauthn.mjs` independently verifies credential id, origin,

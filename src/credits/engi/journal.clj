@@ -18,10 +18,15 @@
     {:ok? false :error :event-id-mismatch}
 
     (contains? (:events journal) (:id event))
-    (if (= (codec/canonical-string event)
-           (codec/canonical-string (get-in journal [:events (:id event)])))
-      {:ok? true :journal journal :duplicate? true}
-      {:ok? false :error :event-id-collision})
+    (let [merged (codec/merge-proof-enrichment
+                  (get-in journal [:events (:id event)]) event)]
+      (if (:ok? merged)
+        {:ok? true
+         :journal (assoc-in journal [:events (:id event)] (:event merged))
+         :duplicate? (= (codec/canonical-string (:event merged))
+                        (codec/canonical-string
+                         (get-in journal [:events (:id event)])))}
+        merged))
 
     :else
     {:ok? true
@@ -32,11 +37,18 @@
    (fn [result [id event]]
      (if-not (:ok? result)
        (reduced result)
-       (if-let [existing (get-in result [:events id])]
-         (if (= (codec/canonical-string existing)
-                (codec/canonical-string event))
-           result
-           (reduced {:ok? false :error :event-id-collision :event-id id}))
+       (cond
+         (not (codec/valid-event-id? event))
+         (reduced {:ok? false :error :event-id-mismatch :event-id id})
+
+         (get-in result [:events id])
+         (let [existing (get-in result [:events id])
+               merged (codec/merge-proof-enrichment existing event)]
+           (if (:ok? merged)
+             (assoc-in result [:events id] (:event merged))
+             (reduced (assoc merged :event-id id))))
+
+         :else
          (assoc-in result [:events id] event))))
    {:ok? true :events {}}
    (mapcat (comp seq :events) journals)))

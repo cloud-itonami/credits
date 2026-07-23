@@ -116,3 +116,35 @@
         (is (not (checkpoint/verify-checkpoint?
                   one (:state-root result)
                   (mapv :id [line-event transfer-event]) public-key)))))))
+
+(deftest asynchronous-signatures-enrich-one-immutable-economic-event
+  (let [partial (update line-event :endorsements
+                        (fn [statements]
+                          (mapv #(dissoc % :signature :event-id)
+                                statements)))
+        poisoned (assoc-in line-event [:endorsements 0 :signature]
+                           "attacker-proof-bytes")
+        first-relay (relay/publish (relay/empty-relay "async") [partial])
+        enriched-relay (relay/publish first-relay [line-event])
+        file (java.io.File/createTempFile "engi-enrichment-" ".edn")
+        path (.getAbsolutePath file)]
+    (.delete file)
+    (try
+      (is (= (:id partial) (:id line-event)))
+      (is (:ok? first-relay))
+      (is (:ok? enriched-relay))
+      (is (= line-event (first (relay/fetch enriched-relay []))))
+      (let [poisoned-first (relay/publish
+                            (relay/empty-relay "poisoned") [poisoned])
+            preserved (relay/publish poisoned-first [line-event])
+            candidate (first (relay/fetch preserved []))]
+        (is (:ok? preserved))
+        (is (= 2 (count (get-in candidate
+                                [:endorsements 0 :signature]))))
+        (is (:ok? (replay/replay [candidate] public-key))))
+      (is (:ok? (store/append-event! path partial)))
+      (is (:enriched? (store/append-event! path line-event)))
+      (is (= [line-event] (:events (store/load-events path))))
+      (is (:duplicate? (store/append-event! path partial)))
+      (finally
+        (.delete (java.io.File. path))))))

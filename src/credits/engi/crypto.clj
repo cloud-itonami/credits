@@ -53,10 +53,19 @@
          (let [payload (codec/evidence-payload event evidence)]
            (cond
              (string? key)
-             (and (string? (:signature evidence))
-                  (verify-bytes? key payload (:signature evidence)))
+             (let [signatures (if (vector? (:signature evidence))
+                                (:signature evidence)
+                                [(:signature evidence)])]
+               (boolean
+                (some #(and (string? %)
+                            (verify-bytes? key payload %))
+                      signatures)))
 
              (and (map? key) (fn? (:verify-evidence key)))
-             (boolean ((:verify-evidence key) payload (:proof evidence)))
+             (let [proofs (if (vector? (:proof evidence))
+                            (:proof evidence)
+                            [(:proof evidence)])]
+               (boolean
+                (some #((:verify-evidence key) payload %) proofs)))
 
              :else false)))))

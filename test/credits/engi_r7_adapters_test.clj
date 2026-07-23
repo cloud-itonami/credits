@@ -128,3 +128,37 @@
         (is (= (sort (map :id events)) (map :id all))))
       (finally
         ((:stop! instance))))))
+
+(deftest concurrent-relay-publishes-do-not-lose-events
+  (let [file (java.io.File/createTempFile "engi-concurrent-relay-" ".edn")
+        path (.getAbsolutePath file)
+        events (mapv (fn [value]
+                       (codec/with-event-id
+                        {:type :concurrent-publish
+                         :parents [] :value value}))
+                     (range 40))]
+    (.delete file)
+    (let [instance (transport/start-relay!
+                    {:relay-id "concurrent" :journal-path path})
+          url (str "http://" (:host instance) ":" (:port instance))]
+      (try
+        (let [responses
+              (->> events
+                   (mapv #(future (transport/publish! url [%])))
+                   (mapv deref))]
+          (is (every? #(= 200 (:status %)) responses))
+          (is (= (set (map :id events))
+                 (set (map :id (get-in (transport/fetch! url)
+                                      [:body :events]))))))
+        ((:stop! instance))
+        (let [restarted (transport/start-relay!
+                         {:relay-id "concurrent" :journal-path path})]
+          (try
+            (is (= (set (map :id events))
+                   (set (keys (:events @(:state restarted))))))
+            (finally
+              ((:stop! restarted)))))
+        (finally
+          ;; stop! is idempotent for the JDK server after the explicit restart
+          ((:stop! instance))
+          (.delete (java.io.File. path)))))))

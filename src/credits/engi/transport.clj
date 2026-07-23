@@ -67,28 +67,29 @@
                     events (:events request)]
                 (if-not (vector? events)
                   (response! exchange 400 {:ok? false :error :invalid-request})
-                  (let [validation (relay/publish @relay-state events)
-                        persisted
-                        (when (and (:ok? validation) journal-path)
-                          (reduce
-                           (fn [result event]
-                             (if-not (:ok? result)
-                               (reduced result)
-                               (store/append-event! journal-path event)))
-                           {:ok? true}
-                           events))]
-                    (if (:ok? validation)
-                      (if (or (nil? journal-path) (:ok? persisted))
-                        (do
-                          (reset! relay-state (dissoc validation :ok?))
-                          (response! exchange 200
-                                     {:ok? true
-                                      :accepted-event-ids (mapv :id events)}))
-                        (response! exchange 503
-                                   {:ok? false :error :persistence-failed}))
-                      (response! exchange 422
-                                 (select-keys validation
-                                              [:ok? :error :event-id]))))))
+                  (locking relay-state
+                    (let [validation (relay/publish @relay-state events)
+                          persisted
+                          (when (and (:ok? validation) journal-path)
+                            (reduce
+                             (fn [result event]
+                               (if-not (:ok? result)
+                                 (reduced result)
+                                 (store/append-event! journal-path event)))
+                             {:ok? true}
+                             events))]
+                      (if (:ok? validation)
+                        (if (or (nil? journal-path) (:ok? persisted))
+                          (do
+                            (reset! relay-state (dissoc validation :ok?))
+                            (response! exchange 200
+                                       {:ok? true
+                                        :accepted-event-ids (mapv :id events)}))
+                          (response! exchange 503
+                                     {:ok? false :error :persistence-failed}))
+                        (response! exchange 422
+                                   (select-keys validation
+                                                [:ok? :error :event-id])))))))
               (response! exchange 413 {:ok? false :error :request-too-large}))
 
             (and (= "GET" method) (= "/v1/events" path))
