@@ -45,6 +45,12 @@ three-device convergence, explicit quarantine of concurrent offline spends, and
 guardian-threshold device-key recovery. A relay's arrival order never selects a
 winning spend.
 
+R3 persists participant journals with append/flush/fsync, supports replaceable
+content relays, and verifies threshold-signed regional checkpoints against a full
+replay. R4 adds plural standing credentials with epoch nullifiers, equal basic
+Kisha with no Phenotype input, and challenged Commons decisions with independent
+appeal juries.
+
 ## Integration direction
 
 1. Each participant stores their signed events in their own append-only kotoba/AT

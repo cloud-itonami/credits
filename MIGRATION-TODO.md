@@ -21,8 +21,14 @@ TitheRouter are optional boundary adapters, not the monetary source of truth.
 - [x] Three-device offline convergence simulation; relay order has no authority.
 - [x] Concurrent offline-spend quarantine (never arrival-time winner selection).
 - [x] Guardian-threshold device-key recovery and replay protection.
-- [ ] Durable append-only kotoba/AT journal owned by each participant.
-- [ ] Replaceable gossip relay transport and signed regional checkpoint.
+- [x] Durable canonical append-only file journal (flush/fsync) per participant.
+- [x] Replaceable content relays; relay order has no authority.
+- [x] Threshold-signed regional checkpoint verified against full replay.
+- [x] Plural standing issuer roles + epoch nullifier duplicate guard.
+- [x] Equal basic Kisha allocation with no Phenotype/reputation input.
+- [x] Commons proposal/challenge/5-of-7 jury/independent 6-of-9 appeal.
+- [ ] kotoba/AT adapter over the durable journal file.
+- [ ] Network gossip transport over the replaceable relay interface.
 - [ ] Physical offline three-device field pilot; no etzhayyim server in path.
 - [ ] Retire legacy graph.write earn/spend pipelines after export/reconciliation.
 - [ ] Make Kisha a Commons issuance policy; remove Phenotype from basic provision.
