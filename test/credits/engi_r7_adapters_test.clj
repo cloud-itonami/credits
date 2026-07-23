@@ -62,3 +62,25 @@
       (finally
         ((:stop! r1))
         ((:stop! r2))))))
+
+(deftest durable-relay-recovers-after-process-restart
+  (let [file (java.io.File/createTempFile "engi-relay-" ".edn")
+        path (.getAbsolutePath file)]
+    (.delete file)
+    (try
+      (let [first-run (transport/start-relay!
+                       {:relay-id "durable" :journal-path path})
+            url (str "http://" (:host first-run) ":" (:port first-run))]
+        (is (= 200 (:status (transport/publish! url [event-a event-b]))))
+        ((:stop! first-run)))
+      (let [second-run (transport/start-relay!
+                        {:relay-id "durable" :journal-path path})
+            url (str "http://" (:host second-run) ":" (:port second-run))]
+        (try
+          (is (= #{(:id event-a) (:id event-b)}
+                 (set (map :id (get-in (transport/fetch! url)
+                                      [:body :events])))))
+          (finally
+            ((:stop! second-run)))))
+      (finally
+        (.delete (java.io.File. path))))))

@@ -81,12 +81,14 @@ simulation tests pass.
 - `credits.engi.transport` exposes only immutable event publish/fetch over EDN
   HTTP. Any participant can gossip a content union between independently
   operated relays; unreachable relays do not become ordering authorities.
+  Operators may attach an append-only verified cache journal, which is restored
+  after process restart without becoming a source of balances or event order.
 - `credits.engi.atproto` maps an event to
   `com.etzhayyim.engi.event`, using the content hash as the record key. Records
   are decoded canonically and their ENGI id is reverified after retrieval.
 - The adapter tests start two real loopback HTTP services, distribute different
-  objects, tolerate an unreachable third service, gossip the union, and verify
-  convergence and tamper rejection.
+  objects, tolerate an unreachable third service, gossip the union, restart a
+  durable relay, and verify convergence and tamper rejection.
 
 Public launch still requires independently hosted relay endpoints and a live PDS
 create/list roundtrip; local socket integration does not prove either external

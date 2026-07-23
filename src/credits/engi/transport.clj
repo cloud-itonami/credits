@@ -6,7 +6,8 @@
   (:require [clojure.edn :as edn]
             [clojure.string :as str]
             [credits.engi.codec :as codec]
-            [credits.engi.relay :as relay])
+            [credits.engi.relay :as relay]
+            [credits.engi.store :as store])
   (:import (com.sun.net.httpserver HttpExchange HttpHandler HttpServer)
            (java.net InetSocketAddress URI)
            (java.net.http HttpClient HttpRequest
@@ -42,7 +43,8 @@
 (defn handler
   "Create a relay handler backed by an atom. The atom is a replaceable cache,
   not authoritative state."
-  [relay-state]
+  ([relay-state] (handler relay-state nil))
+  ([relay-state journal-path]
   (reify HttpHandler
     (handle [_ exchange]
       (try
@@ -55,18 +57,25 @@
                     events (:events request)]
                 (if-not (vector? events)
                   (response! exchange 400 {:ok? false :error :invalid-request})
-                  (let [result (swap! relay-state
-                                      (fn [current]
-                                        (let [published
-                                              (relay/publish current events)]
-                                          (if (:ok? published)
-                                            (dissoc published :ok?)
-                                            current))))
-                        validation (relay/publish result events)]
+                  (let [validation (relay/publish @relay-state events)
+                        persisted
+                        (when (and (:ok? validation) journal-path)
+                          (reduce
+                           (fn [result event]
+                             (if-not (:ok? result)
+                               (reduced result)
+                               (store/append-event! journal-path event)))
+                           {:ok? true}
+                           events))]
                     (if (:ok? validation)
-                      (response! exchange 200
-                                 {:ok? true
-                                  :accepted-event-ids (mapv :id events)})
+                      (if (or (nil? journal-path) (:ok? persisted))
+                        (do
+                          (reset! relay-state (dissoc validation :ok?))
+                          (response! exchange 200
+                                     {:ok? true
+                                      :accepted-event-ids (mapv :id events)}))
+                        (response! exchange 503
+                                   {:ok? false :error :persistence-failed}))
                       (response! exchange 422
                                  (select-keys validation
                                               [:ok? :error :event-id]))))))
@@ -84,22 +93,32 @@
         (catch Exception _
           (response! exchange 400 {:ok? false :error :invalid-edn}))
         (finally
-          (.close exchange))))))
+          (.close exchange)))))))
 
 (defn start-relay!
   "Start a loopback or explicitly bound relay. Returns a stop function and the
   actual port. Callers choose independent persistence/hosting."
-  [{:keys [host port relay-id]
+  [{:keys [host port relay-id journal-path]
     :or {host "127.0.0.1" port 0}}]
-  (let [state (atom (relay/empty-relay relay-id))
+  (let [loaded (if journal-path
+                 (store/load-events journal-path)
+                 {:ok? true :events []})]
+    (when-not (:ok? loaded)
+      (throw (ex-info "Relay journal failed verification" loaded)))
+    (let [seeded (relay/publish (relay/empty-relay relay-id)
+                                (:events loaded))
+          _ (when-not (:ok? seeded)
+              (throw (ex-info "Relay journal contains invalid content" seeded)))
+          state (atom (dissoc seeded :ok?))
         server (HttpServer/create (InetSocketAddress. host (int port)) 0)]
-    (.createContext server "/" (handler state))
-    (.setExecutor server nil)
-    (.start server)
-    {:host host
-     :port (.getPort (.getAddress server))
-     :state state
-     :stop! #(.stop server 0)}))
+      (.createContext server "/" (handler state journal-path))
+      (.setExecutor server nil)
+      (.start server)
+      {:host host
+       :port (.getPort (.getAddress server))
+       :state state
+       :journal-path journal-path
+       :stop! #(.stop server 0)})))
 
 (defn- request [method uri body]
   (let [builder (-> (HttpRequest/newBuilder (URI/create uri))
