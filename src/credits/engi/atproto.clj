@@ -32,6 +32,11 @@
    :validate true
    :record (event-record event created-at)})
 
+(defn put-record-request
+  [repo event created-at swap-record]
+  (cond-> (create-record-request repo event created-at)
+    (string? swap-record) (assoc :swapRecord swap-record)))
+
 (defn record->event
   "Decode an AT record fail-closed. URI/CID metadata from a PDS is not trusted."
   [record]
@@ -65,3 +70,8 @@
    (cond-> {:repo repo :collection collection :limit 100}
      (and (string? cursor) (not (str/blank? cursor)))
      (assoc :cursor cursor))))
+
+(defn get-record-query [repo event]
+  {:repo repo
+   :collection collection
+   :rkey (event-rkey event)})

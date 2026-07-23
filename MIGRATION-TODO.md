@@ -33,6 +33,7 @@ TitheRouter are optional boundary adapters, not the monetary source of truth.
 - [x] Replaceable HTTP relay transport + participant-runnable gossip union.
 - [x] Participant-side durable publish/fetch/merge sync across three journals.
 - [x] Authenticated AT XRPC create/list client + Lexicon + local HTTP roundtrip.
+- [x] CID-CAS AT proof enrichment and fail-closed full cursor traversal.
 - [ ] Authenticate a real external PDS session and complete the same roundtrip.
 - [ ] Deploy independently operated relay instances outside etzhayyim control.
 - [ ] Physical offline three-device field pilot; no etzhayyim server in path.

@@ -108,6 +108,10 @@ simulation tests pass.
   Lexicon. Access tokens are accepted only over HTTPS (or loopback tests), and
   every returned record is canonically reverified rather than trusted as PDS
   state.
+  Proof enrichment reads and verifies the current record, merges all proof
+  candidates locally, then uses `putRecord` with `swapRecord` CID. Concurrent
+  writes surface as retryable conflicts instead of PDS-selected winners.
+  Opaque list cursors are followed to completion and repeated cursors fail.
 - The adapter tests start two real loopback HTTP services, distribute different
   objects, tolerate an unreachable third service, gossip the union, restart a
   durable relay, and verify convergence and tamper rejection.

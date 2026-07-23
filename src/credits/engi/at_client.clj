@@ -5,7 +5,8 @@
   responses remain untrusted until `atproto/record->event` succeeds."
   (:require [clojure.data.json :as json]
             [clojure.string :as str]
-            [credits.engi.atproto :as atproto])
+            [credits.engi.atproto :as atproto]
+            [credits.engi.codec :as codec])
   (:import (java.net URI URLEncoder)
            (java.net.http HttpClient HttpRequest
                           HttpRequest$BodyPublishers HttpResponse$BodyHandlers)
@@ -69,6 +70,49 @@
          (atproto/create-record-request repo event created-at)
          nil))
 
+(defn get-record! [client repo event]
+  (send! client "GET" "com.atproto.repo.getRecord" nil
+         (atproto/get-record-query repo event)))
+
+(defn put-record!
+  [client repo event created-at swap-record]
+  (send! client "POST" "com.atproto.repo.putRecord"
+         (atproto/put-record-request repo event created-at swap-record)
+         nil))
+
+(defn upsert-event!
+  "Read, verify, proof-merge, and compare-and-swap one event record. A caller
+  may retry `:pds-write-conflict`; no PDS response selects proof winners."
+  [client repo event created-at]
+  (let [existing (get-record! client repo event)]
+    (cond
+      (= 404 (:status existing))
+      (let [created (create-record! client repo event created-at)]
+        (if (= 409 (:status created))
+          {:ok? false :error :pds-write-conflict}
+          created))
+
+      (not (:ok? existing))
+      existing
+
+      :else
+      (let [decoded (atproto/record->event (get-in existing [:body :value]))]
+        (if-not (:ok? decoded)
+          {:ok? false :error :untrusted-pds-record
+           :record-error (:error decoded)}
+          (let [merged (codec/merge-proof-enrichment (:event decoded) event)]
+            (if-not (:ok? merged)
+              merged
+              (let [updated
+                    (put-record! client repo (:event merged)
+                                 (or (get-in existing
+                                             [:body :value :createdAt])
+                                     created-at)
+                                 (get-in existing [:body :cid]))]
+                (if (= 409 (:status updated))
+                  {:ok? false :error :pds-write-conflict}
+                  updated)))))))))
+
 (defn list-records!
   ([client repo] (list-records! client repo nil))
   ([client repo cursor]
@@ -92,3 +136,21 @@
            {:ok? true
             :events (mapv :event decoded)
             :cursor (get-in response [:body :cursor])}))))))
+
+(defn verified-all-events!
+  "Read every PDS page, rejecting repeated cursors and any untrusted record."
+  [client repo]
+  (loop [cursor nil
+         seen #{}
+         events []]
+    (let [page (verified-events! client repo cursor)
+          next-cursor (:cursor page)]
+      (cond
+        (not (:ok? page)) page
+        (and next-cursor (contains? seen next-cursor))
+        {:ok? false :error :repeated-pds-cursor}
+        next-cursor
+        (recur next-cursor (conj seen next-cursor)
+               (into events (:events page)))
+        :else
+        {:ok? true :events (into events (:events page))}))))
