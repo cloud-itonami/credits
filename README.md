@@ -51,6 +51,11 @@ replay. R4 adds plural standing credentials with epoch nullifiers, equal basic
 Kisha with no Phenotype input, and challenged Commons decisions with independent
 appeal juries.
 
+R5 adds source-diverse regional living-basket indices, explicit-rounding
+cross-region conversion, conservative multilateral netting, and opt-in legacy
+claims. A legacy credit balance has zero monetary effect until Commons review;
+the disabled legacy actor no longer advertises `graph.write`.
+
 ## Integration direction
 
 1. Each participant stores their signed events in their own append-only kotoba/AT

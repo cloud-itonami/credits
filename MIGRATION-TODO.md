@@ -30,8 +30,14 @@ TitheRouter are optional boundary adapters, not the monetary source of truth.
 - [ ] kotoba/AT adapter over the durable journal file.
 - [ ] Network gossip transport over the replaceable relay interface.
 - [ ] Physical offline three-device field pilot; no etzhayyim server in path.
-- [ ] Retire legacy graph.write earn/spend pipelines after export/reconciliation.
-- [ ] Make Kisha a Commons issuance policy; remove Phenotype from basic provision.
+- [x] Disable legacy actor and remove advertised `graph.write` capability.
+- [x] Legacy balance export is opt-in evidence with zero automatic EN effect.
+- [x] Route an accepted legacy claim through bounded Commons deliberation.
+- [x] Source-diverse living-basket index + explicit-rounding region conversion.
+- [x] Multilateral regional netting with zero-sum conservation.
+- [x] Make basic Kisha equal Commons allocation; no Phenotype input.
+- [ ] Export/reconcile real legacy entries and collect participant consent.
+- [ ] Remove dormant legacy mutation pipelines after the reconciliation window.
 
 ## Substrate-boundary checks
 
