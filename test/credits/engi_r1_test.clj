@@ -34,7 +34,7 @@
 (def transfer
   (signed-event
    {:type :transfer :from "did:alice" :to "did:bob"
-    :amount 60 :nonce 1}
+    :amount 60 :nonce 1 :parents [(:id credit-line)]}
    :signatures
    [{:signer "did:alice"} {:signer "did:bob"}]))
 
@@ -83,12 +83,12 @@
            (:error (replay/replay
                     [credit-line (assoc transfer :amount 61)] public-key)))))
   (testing "a transfer cannot precede its credit relation"
-    (is (= :credit-limit-exceeded
+    (is (= :credit-line-parent-required
            (:error (replay/replay [transfer credit-line] public-key)))))
   (testing "payer nonce must be contiguous"
     (let [gap (signed-event
                {:type :transfer :from "did:alice" :to "did:bob"
-                :amount 1 :nonce 2}
+                :amount 1 :nonce 2 :parents [(:id transfer)]}
                :signatures
                [{:signer "did:alice"} {:signer "did:bob"}])]
       (is (= :non-contiguous-nonce

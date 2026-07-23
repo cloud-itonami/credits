@@ -19,6 +19,8 @@ TitheRouter are optional boundary adapters, not the monetary source of truth.
 - [x] Ed25519 verifier + device key envelope + WebAuthn replay adapter.
 - [x] Full untrusted-journal replay + deterministic state root.
 - [x] Contiguous participant nonce and fail-closed event dispatch.
+- [x] Causal parents join current credit line, prior nonce, and line revisions.
+- [x] Quarantine concurrent credit-line revisions instead of hash-order wins.
 - [x] In-memory participant/device journal with deterministic dependency merge.
 - [x] Three-device offline convergence simulation; relay order has no authority.
 - [x] Concurrent offline-spend quarantine (never arrival-time winner selection).

@@ -63,6 +63,16 @@
                   :event-ids (vec (sort (map :id candidates)))})))
        vec))
 
+(defn- credit-line-conflicts [events]
+  (->> events
+       (filter #(= :credit-line (:type %)))
+       (group-by (juxt :subject #(get % :revision 1)))
+       (keep (fn [[slot candidates]]
+               (when (< 1 (count (set (map :id candidates))))
+                 {:slot slot
+                  :event-ids (vec (sort (map :id candidates)))})))
+       vec))
+
 (defn- topological-order [events]
   (let [by-id (into {} (map (juxt :id identity)) events)
         known (set (keys by-id))
@@ -94,10 +104,18 @@
     (if-not (:ok? merged)
       merged
       (let [events (vals (:events merged))
-            conflicts (nonce-conflicts events)]
-        (if (seq conflicts)
+            nonce-forks (nonce-conflicts events)
+            line-forks (credit-line-conflicts events)]
+        (cond
+          (seq nonce-forks)
           {:ok? false :error :concurrent-spend-conflict
-           :conflicts conflicts :events (:events merged)}
+           :conflicts nonce-forks :events (:events merged)}
+
+          (seq line-forks)
+          {:ok? false :error :concurrent-credit-line-conflict
+           :conflicts line-forks :events (:events merged)}
+
+          :else
           (topological-order events))))))
 
 (defn merge-and-replay [journals resolve-public-key]

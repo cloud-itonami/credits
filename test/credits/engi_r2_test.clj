@@ -3,7 +3,8 @@
             [credits.engi.codec :as codec]
             [credits.engi.crypto :as crypto]
             [credits.engi.identity :as identity]
-            [credits.engi.journal :as journal]))
+            [credits.engi.journal :as journal]
+            [credits.engi.replay :as replay]))
 
 (def participants
   ["did:alice" "did:bob" "did:carol" "did:guardian-1"
@@ -128,3 +129,77 @@
                              (:attestations unsigned)))]
         (is (= :guardian-quorum-required
                (:error (identity/apply-rotation state one public-key))))))))
+
+(deftest sequential-nonces-form-a-causal-parent-chain
+  (let [second
+        (signed-event
+         {:type :transfer :from "did:alice" :to "did:bob"
+          :amount 10 :nonce 2
+          :parents [(:id line-event) (:id transfer-event)]}
+         :signatures [{:signer "did:alice"} {:signer "did:bob"}])
+        orphan
+        (signed-event
+         {:type :transfer :from "did:alice" :to "did:bob"
+          :amount 10 :nonce 2 :parents [(:id line-event)]}
+         :signatures [{:signer "did:alice"} {:signer "did:bob"}])
+        valid (journal/merge-and-replay
+               [(-> (journal/new-journal "did:alice" "phone")
+                    (append! second)
+                    (append! line-event)
+                    (append! transfer-event))]
+               public-key)
+        invalid (replay/replay [line-event transfer-event orphan] public-key)]
+    (is (:ok? valid))
+    (is (= 2 (get-in valid [:state :next-nonce "did:alice"])))
+    (is (not (:ok? invalid)))
+    (is (= :previous-nonce-parent-required (:error invalid)))))
+
+(deftest credit-line-revisions-join-the-participant-causal-chain
+  (let [revised
+        (signed-event
+         {:type :credit-line :subject "did:alice"
+          :revision 2 :after-nonce 1
+          :parents [(:id line-event) (:id transfer-event)]}
+         :endorsements
+         [{:signer "did:bob" :guarantor "did:bob"
+           :subject "did:alice" :limit 120}
+          {:signer "did:carol" :guarantor "did:carol"
+           :subject "did:alice" :limit 100}])
+        competing
+        (signed-event
+         {:type :credit-line :subject "did:alice"
+          :revision 2 :after-nonce 1
+          :parents [(:id line-event) (:id transfer-event)]}
+         :endorsements
+         [{:signer "did:bob" :guarantor "did:bob"
+           :subject "did:alice" :limit 90}
+          {:signer "did:carol" :guarantor "did:carol"
+           :subject "did:alice" :limit 90}])
+        second
+        (signed-event
+         {:type :transfer :from "did:alice" :to "did:bob"
+          :amount 10 :nonce 2
+          :parents [(:id transfer-event) (:id revised)]}
+         :signatures [{:signer "did:alice"} {:signer "did:bob"}])
+        converged
+        (journal/merge-and-replay
+         [(-> (journal/new-journal "did:alice" "a")
+              (append! second)
+              (append! line-event))
+          (-> (journal/new-journal "did:bob" "b")
+              (append! revised)
+              (append! transfer-event))]
+         public-key)
+        forked
+        (journal/merge-journals
+         [(-> (journal/new-journal "did:alice" "a")
+              (append! revised))
+          (-> (journal/new-journal "did:alice" "b")
+              (append! competing))])]
+    (is (:ok? converged))
+    (is (= 2 (get-in converged
+                     [:state :credit-line-revisions "did:alice"])))
+    (is (= 120 (get-in converged
+                       [:state :credit-lines "did:alice" :limit])))
+    (is (= 2 (get-in converged [:state :next-nonce "did:alice"])))
+    (is (= :concurrent-credit-line-conflict (:error forked)))))

@@ -21,6 +21,11 @@ replay result.
   Competing proof bytes are all retained and local replay accepts any valid
   candidate, preventing a relay from poisoning or selecting the winning proof.
 - Participant nonces are contiguous from 1. Unknown event kinds fail closed.
+- Every transfer parents the payer's current credit-line event; nonce `n > 1`
+  also parents nonce `n-1`. Credit-line revisions are contiguous and parent
+  both the previous line and the subject's latest outgoing nonce. This makes
+  all non-commutative payer transitions causally ordered rather than sorted by
+  relay arrival or arbitrary content hash.
 
 ## R2 — offline convergence and recovery
 
@@ -28,6 +33,8 @@ replay result.
 - Parents define dependency order; relay arrival order is irrelevant.
 - Concurrent transfers sharing `(payer DID, nonce)` are quarantined together.
   The protocol does not choose a winner.
+- Concurrent credit lines sharing `(subject DID, revision)` are likewise
+  quarantined. A stale `after-nonce` view cannot revise a live credit line.
 - Device key recovery requires a predeclared guardian threshold. Rotations are
   monotonic; old public keys are retained as revoked history.
 

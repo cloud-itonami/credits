@@ -22,6 +22,9 @@
             (let [event {:id (str "tx:" nonce) :type :transfer
                          :from "did:a" :to "did:b"
                          :amount 1 :nonce nonce
+                         :parents (cond-> ["credit-line:bench"]
+                                    (> nonce 1)
+                                    (conj (str "tx:" (dec nonce))))
                          :signatures [{:signer "did:a"}
                                       {:signer "did:b"}]}
                   result (engi/apply-transfer state event signature-ok?)]

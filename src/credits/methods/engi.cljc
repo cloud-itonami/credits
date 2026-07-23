@@ -9,8 +9,10 @@
 (def zero-state
   {:balances {}
    :credit-lines {}
+   :credit-line-revisions {}
    :used-nonces #{}
    :next-nonce {}
+   :nonce-event-ids {}
    :seen-event-ids #{}
    :accepted-events []
    :commons-issued-by-epoch {}})
@@ -45,8 +47,9 @@
   "Establish a participant's negative-balance ceiling from independent
   endorsements. The median of positive endorsements is used; a participant
   cannot endorse themself and duplicate guarantors do not count."
-  [state {:keys [id subject endorsements min-guarantors] :as request
-          :or {min-guarantors 2}}
+  [state {:keys [id subject endorsements min-guarantors revision after-nonce]
+          :as request
+          :or {min-guarantors 2 revision 1 after-nonce 0}}
    verify-endorsement?]
   (let [valid (->> endorsements
                    (filter #(and (string? (:guarantor %))
@@ -64,6 +67,24 @@
       (contains? (:seen-event-ids state) id)
       (rejection :replayed-event-id)
 
+      (not= revision (inc (get-in state [:credit-line-revisions subject] 0)))
+      (rejection :non-contiguous-credit-line-revision)
+
+      (not= after-nonce (get-in state [:next-nonce subject] 0))
+      (rejection :stale-credit-line-view)
+
+      (and (> revision 1)
+           (not (some
+                 #{(get-in state [:credit-lines subject :event-id])}
+                 (:parents request))))
+      (rejection :previous-credit-line-parent-required)
+
+      (and (> after-nonce 0)
+           (not (some
+                 #{(get-in state [:nonce-event-ids subject after-nonce])}
+                 (:parents request))))
+      (rejection :latest-subject-nonce-parent-required)
+
       (< (count valid) min-guarantors)
       (rejection :insufficient-independent-guarantors)
 
@@ -73,7 +94,10 @@
          :state (-> state
                     (assoc-in [:credit-lines subject]
                               {:limit limit
-                               :guarantor-count (count valid)})
+                               :guarantor-count (count valid)
+                               :event-id id
+                               :revision revision})
+                    (assoc-in [:credit-line-revisions subject] revision)
                     (update :seen-event-ids conj id)
                     ;; Preserve signed evidence so another client can replay
                     ;; without trusting the client that produced this state.
@@ -102,8 +126,17 @@
     (not= nonce (inc (get-in state [:next-nonce from] 0)))
     (rejection :non-contiguous-nonce)
 
+    (and (> nonce 1)
+         (not (some #{(get-in state [:nonce-event-ids from (dec nonce)])}
+                    (:parents event))))
+    (rejection :previous-nonce-parent-required)
+
     (contains? (:seen-event-ids state) id)
     (rejection :replayed-event-id)
+
+    (not (some #{(get-in state [:credit-lines from :event-id])}
+               (:parents event)))
+    (rejection :credit-line-parent-required)
 
     (not (signatures-valid? event verify-signature?))
     (rejection :bilateral-signature-required)
@@ -119,6 +152,7 @@
                 (update-in [:balances to] (fnil + 0) amount)
                 (update :used-nonces conj [from nonce])
                 (assoc-in [:next-nonce from] nonce)
+                (assoc-in [:nonce-event-ids from nonce] id)
                 (update :seen-event-ids conj id)
                 ;; Signatures are consensus evidence, not transport metadata.
                 (update :accepted-events conj event))}))

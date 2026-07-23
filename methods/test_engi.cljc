@@ -23,6 +23,7 @@
 
 (defn transfer [id from to amount nonce]
   {:id id :type :transfer :from from :to to :amount amount :nonce nonce
+   :parents [(str "credit-line:" from)]
    :signatures [{:signer from :event-id id}
                 {:signer to :event-id id}]})
 
