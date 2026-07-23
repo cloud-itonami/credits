@@ -86,6 +86,11 @@ simulation tests pass.
 - `credits.engi.atproto` maps an event to
   `com.etzhayyim.engi.event`, using the content hash as the record key. Records
   are decoded canonically and their ENGI id is reverified after retrieval.
+- `credits.engi.at-client` performs participant-authenticated
+  `com.atproto.repo.createRecord` and `listRecords` calls using the checked-in
+  Lexicon. Access tokens are accepted only over HTTPS (or loopback tests), and
+  every returned record is canonically reverified rather than trusted as PDS
+  state.
 - The adapter tests start two real loopback HTTP services, distribute different
   objects, tolerate an unreachable third service, gossip the union, restart a
   durable relay, and verify convergence and tamper rejection.

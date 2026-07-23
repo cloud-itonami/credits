@@ -29,7 +29,8 @@ TitheRouter are optional boundary adapters, not the monetary source of truth.
 - [x] Commons proposal/challenge/5-of-7 jury/independent 6-of-9 appeal.
 - [x] Canonical kotoba/AT record adapter over participant-owned events.
 - [x] Replaceable HTTP relay transport + participant-runnable gossip union.
-- [ ] Authenticate a real PDS session and complete an AT create/list roundtrip.
+- [x] Authenticated AT XRPC create/list client + Lexicon + local HTTP roundtrip.
+- [ ] Authenticate a real external PDS session and complete the same roundtrip.
 - [ ] Deploy independently operated relay instances outside etzhayyim control.
 - [ ] Physical offline three-device field pilot; no etzhayyim server in path.
 - [x] Disable legacy actor and remove advertised `graph.write` capability.

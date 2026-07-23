@@ -1,0 +1,33 @@
+{
+  "lexicon": 1,
+  "id": "com.etzhayyim.engi.event",
+  "defs": {
+    "main": {
+      "type": "record",
+      "key": "any",
+      "record": {
+        "type": "object",
+        "required": [
+          "eventId",
+          "canonicalEvent",
+          "createdAt"
+        ],
+        "properties": {
+          "eventId": {
+            "type": "string",
+            "minLength": 68,
+            "maxLength": 68
+          },
+          "canonicalEvent": {
+            "type": "string",
+            "maxLength": 100000
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "datetime"
+          }
+        }
+      }
+    }
+  }
+}

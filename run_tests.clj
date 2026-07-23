@@ -27,8 +27,10 @@
   ;; and the WebAuthn verifier uses data.json. JVM tests exercise both.
   (load-file "src/credits/engi/transport.clj")
   (load-file "src/credits/engi/webauthn.clj")
+  (load-file "src/credits/engi/at_client.clj")
   (load-file "test/credits/engi_r7_adapters_test.clj")
-  (load-file "test/credits/engi_webauthn_test.clj"))
+  (load-file "test/credits/engi_webauthn_test.clj")
+  (load-file "test/credits/engi_at_client_test.clj"))
 (let [result (clojure.test/run-tests 'credits.methods.test-engi)]
   (let [r1-result (clojure.test/run-tests 'credits.engi-r1-test)]
     (let [r2-result (clojure.test/run-tests 'credits.engi-r2-test)]
@@ -41,7 +43,8 @@
                       {:fail 0 :error 0}
                       (clojure.test/run-tests
                        'credits.engi-r7-adapters-test
-                       'credits.engi-webauthn-test))]
+                       'credits.engi-webauthn-test
+                       'credits.engi-at-client-test))]
                 (when (pos? (+ (:fail result) (:error result)
                                (:fail r1-result) (:error r1-result)
                                (:fail r2-result) (:error r2-result)
