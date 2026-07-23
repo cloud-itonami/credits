@@ -3,6 +3,7 @@
             [credits.engi.atproto :as atproto]
             [credits.engi.codec :as codec]
             [credits.engi.journal :as journal]
+            [credits.engi.relay-main :as relay-main]
             [credits.engi.transport :as transport]))
 
 (def event-a
@@ -37,6 +38,8 @@
     (try
       (is (= 200 (:status (transport/publish! u1 [event-a]))))
       (is (= 200 (:status (transport/publish! u2 [event-b]))))
+      (is (= {:ok? true :relay-id "relay-a" :event-count 1}
+             (:body (transport/health! u1))))
       (let [gossip (transport/gossip-once! [u2 u1
                                              "http://127.0.0.1:1"])]
         (is (:ok? gossip))
@@ -84,3 +87,27 @@
             ((:stop! second-run)))))
       (finally
         (.delete (java.io.File. path))))))
+
+(deftest relay-process-configuration-fails-closed
+  (is (= {:relay-id "community-a"
+          :host "0.0.0.0"
+          :port 9090
+          :journal-path "/var/lib/engi/events.edn"}
+         (relay-main/config-from-env
+          {"ENGI_RELAY_ID" "community-a"
+           "ENGI_RELAY_HOST" "0.0.0.0"
+           "ENGI_RELAY_PORT" "9090"
+           "ENGI_RELAY_JOURNAL" "/var/lib/engi/events.edn"})))
+  (is (= :relay-id-required
+         (:error
+          (try
+            (relay-main/config-from-env {})
+            (catch clojure.lang.ExceptionInfo e (ex-data e))))))
+  (is (= :invalid-port
+         (:error
+          (try
+            (relay-main/config-from-env
+             {"ENGI_RELAY_ID" "x"
+              "ENGI_RELAY_JOURNAL" "/tmp/x"
+              "ENGI_RELAY_PORT" "70000"})
+            (catch clojure.lang.ExceptionInfo e (ex-data e)))))))

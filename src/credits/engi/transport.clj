@@ -88,6 +88,12 @@
                                              (query-ids
                                               (.getRequestURI exchange)))})
 
+            (and (= "GET" method) (= "/healthz" path))
+            (response! exchange 200
+                       {:ok? true
+                        :relay-id (:relay-id @relay-state)
+                        :event-count (count (:events @relay-state))})
+
             :else
             (response! exchange 404 {:ok? false :error :not-found})))
         (catch Exception _
@@ -141,6 +147,9 @@
 (defn publish!
   [base-url events]
   (request "POST" (str base-url "/v1/events") {:events (vec events)}))
+
+(defn health! [base-url]
+  (request "GET" (str base-url "/healthz") nil))
 
 (defn fetch!
   ([base-url] (fetch! base-url []))

@@ -26,6 +26,7 @@
   ;; The production transport uses the JDK HttpServer/HttpClient modules,
   ;; and the WebAuthn verifier uses data.json. JVM tests exercise both.
   (load-file "src/credits/engi/transport.clj")
+  (load-file "src/credits/engi/relay_main.clj")
   (load-file "src/credits/engi/webauthn.clj")
   (load-file "src/credits/engi/at_client.clj")
   (load-file "test/credits/engi_r7_adapters_test.clj")

@@ -83,6 +83,8 @@ simulation tests pass.
   operated relays; unreachable relays do not become ordering authorities.
   Operators may attach an append-only verified cache journal, which is restored
   after process restart without becoming a source of balances or event order.
+  `clojure -M:relay` is the standalone operator entry point; its health response
+  exposes only relay identity and immutable object count.
 - `credits.engi.atproto` maps an event to
   `com.etzhayyim.engi.event`, using the content hash as the record key. Records
   are decoded canonically and their ENGI id is reverified after retrieval.

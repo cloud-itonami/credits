@@ -60,6 +60,23 @@ R6 adds an independent dependency-free Node.js verifier, cross-client canonical
 and Ed25519 vectors, protocol audits, corrupt/Byzantine input rejection, and a
 100,000-transition JVM benchmark. See [`PROTOCOL.md`](PROTOCOL.md).
 
+## Run an independent relay
+
+Each operator chooses their own relay id, storage path, host, and port:
+
+```bash
+ENGI_RELAY_ID=neighbourhood-a \
+ENGI_RELAY_HOST=127.0.0.1 \
+ENGI_RELAY_PORT=8080 \
+ENGI_RELAY_JOURNAL=/var/lib/engi/events.edn \
+clojure -M:relay
+```
+
+`GET /healthz`, `GET /v1/events`, and `POST /v1/events` are the only service
+surfaces. The process stores verified immutable events and can gossip their
+content union; it has no balance, mint, ordering, freeze, or resolution API.
+Internet-facing operators terminate TLS independently in front of this process.
+
 ## Integration direction
 
 1. Each participant stores their signed events in their own append-only kotoba/AT
@@ -72,6 +89,7 @@ and Ed25519 vectors, protocol audits, corrupt/Byzantine input rejection, and a
    ENGI source of truth.
 
 The implementation does not pretend to provide physical enforcement, legal tender
-status, or Sybil-proof personhood. The next integration gate is durable
-participant-owned kotoba journals plus replaceable relay transport and signed
-regional checkpoints.
+status, or Sybil-proof personhood. The remaining production gates are live
+participant-controlled PDS and authenticator ceremonies, independently hosted
+relays, a physical three-device pilot, consent-based legacy reconciliation, and
+independent security/legal review.
