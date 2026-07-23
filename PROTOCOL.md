@@ -70,7 +70,24 @@ replay result.
 ## Honest production boundary
 
 The protocol implementation is production-shaped, but public launch additionally
-requires a physical multi-device pilot, WebAuthn adapter, network transport,
-mobile secure-key integration, external security review, participant consent for
-any legacy export, and jurisdiction-specific legal/tax disclosure. None of those
-may be represented as complete merely because simulation tests pass.
+requires a physical multi-device pilot, WebAuthn adapter, independently operated
+network endpoints, mobile secure-key integration, external security review,
+participant consent for any legacy export, and jurisdiction-specific legal/tax
+disclosure. None of those may be represented as complete merely because
+simulation tests pass.
+
+## Production adapters
+
+- `credits.engi.transport` exposes only immutable event publish/fetch over EDN
+  HTTP. Any participant can gossip a content union between independently
+  operated relays; unreachable relays do not become ordering authorities.
+- `credits.engi.atproto` maps an event to
+  `com.etzhayyim.engi.event`, using the content hash as the record key. Records
+  are decoded canonically and their ENGI id is reverified after retrieval.
+- The adapter tests start two real loopback HTTP services, distribute different
+  objects, tolerate an unreachable third service, gossip the union, and verify
+  convergence and tamper rejection.
+
+Public launch still requires independently hosted relay endpoints and a live PDS
+create/list roundtrip; local socket integration does not prove either external
+operator independence or external service availability.

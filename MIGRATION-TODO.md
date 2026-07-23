@@ -27,8 +27,10 @@ TitheRouter are optional boundary adapters, not the monetary source of truth.
 - [x] Plural standing issuer roles + epoch nullifier duplicate guard.
 - [x] Equal basic Kisha allocation with no Phenotype/reputation input.
 - [x] Commons proposal/challenge/5-of-7 jury/independent 6-of-9 appeal.
-- [ ] kotoba/AT adapter over the durable journal file.
-- [ ] Network gossip transport over the replaceable relay interface.
+- [x] Canonical kotoba/AT record adapter over participant-owned events.
+- [x] Replaceable HTTP relay transport + participant-runnable gossip union.
+- [ ] Authenticate a real PDS session and complete an AT create/list roundtrip.
+- [ ] Deploy independently operated relay instances outside etzhayyim control.
 - [ ] Physical offline three-device field pilot; no etzhayyim server in path.
 - [x] Disable legacy actor and remove advertised `graph.write` capability.
 - [x] Legacy balance export is opt-in evidence with zero automatic EN effect.
