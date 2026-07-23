@@ -38,6 +38,13 @@ TitheRouter are optional boundary adapters, not the monetary source of truth.
 - [x] Make basic Kisha equal Commons allocation; no Phenotype input.
 - [ ] Export/reconcile real legacy entries and collect participant consent.
 - [ ] Remove dormant legacy mutation pipelines after the reconciliation window.
+- [x] Independent Node.js canonical-id and Ed25519 verifier.
+- [x] Cross-client test vectors.
+- [x] Reproducible protocol/legacy-manifest audit.
+- [x] Corruption, tamper, missing-parent, fork, replay and quorum failure tests.
+- [x] 100,000-transition JVM benchmark with conservation check.
+- [ ] WebAuthn/mobile secure-key adapter.
+- [ ] External security review by an independent maintainer.
 
 ## Substrate-boundary checks
 

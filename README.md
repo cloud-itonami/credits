@@ -56,6 +56,10 @@ cross-region conversion, conservative multilateral netting, and opt-in legacy
 claims. A legacy credit balance has zero monetary effect until Commons review;
 the disabled legacy actor no longer advertises `graph.write`.
 
+R6 adds an independent dependency-free Node.js verifier, cross-client canonical
+and Ed25519 vectors, protocol audits, corrupt/Byzantine input rejection, and a
+100,000-transition JVM benchmark. See [`PROTOCOL.md`](PROTOCOL.md).
+
 ## Integration direction
 
 1. Each participant stores their signed events in their own append-only kotoba/AT
