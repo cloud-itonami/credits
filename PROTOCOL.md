@@ -85,6 +85,10 @@ simulation tests pass.
   after process restart without becoming a source of balances or event order.
   `clojure -M:relay` is the standalone operator entry point; its health response
   exposes only relay identity and immutable object count.
+- `credits.engi.sync/sync-device!` is participant-side: it publishes the local
+  durable journal, gossips reachable copies, performs dependency/conflict merge
+  locally, and appends only verified events. Integration tests use three
+  separate files, replace a relay, and continue while another relay is down.
 - `credits.engi.atproto` maps an event to
   `com.etzhayyim.engi.event`, using the content hash as the record key. Records
   are decoded canonically and their ENGI id is reverified after retrieval.

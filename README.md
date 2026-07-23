@@ -76,6 +76,9 @@ clojure -M:relay
 surfaces. The process stores verified immutable events and can gossip their
 content union; it has no balance, mint, ordering, freeze, or resolution API.
 Internet-facing operators terminate TLS independently in front of this process.
+Participant clients call `credits.engi.sync/sync-device!` to merge relay
+contents into their own durable journal; relay arrival order is never copied as
+ledger order.
 
 ## Integration direction
 
