@@ -10,6 +10,7 @@
   {:balances {}
    :credit-lines {}
    :used-nonces #{}
+   :next-nonce {}
    :seen-event-ids #{}
    :accepted-events []
    :commons-issued-by-epoch {}})
@@ -98,6 +99,9 @@
     (contains? (:used-nonces state) [from nonce])
     (rejection :replayed-nonce)
 
+    (not= nonce (inc (get-in state [:next-nonce from] 0)))
+    (rejection :non-contiguous-nonce)
+
     (contains? (:seen-event-ids state) id)
     (rejection :replayed-event-id)
 
@@ -114,6 +118,7 @@
                 (update-in [:balances from] (fnil - 0) amount)
                 (update-in [:balances to] (fnil + 0) amount)
                 (update :used-nonces conj [from nonce])
+                (assoc-in [:next-nonce from] nonce)
                 (update :seen-event-ids conj id)
                 ;; Signatures are consensus evidence, not transport metadata.
                 (update :accepted-events conj event))}))

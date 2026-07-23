@@ -66,7 +66,7 @@
     (testing "relational credit is bounded"
       (is (= :credit-limit-exceeded
              (:error (engi/apply-transfer
-                      s (transfer "tx-big" "did:alice" "did:bob" 51 2)
+                      s (transfer "tx-big" "did:alice" "did:bob" 51 1)
                       signature-ok?)))))))
 
 (deftest credit-limit-needs-independent-relations

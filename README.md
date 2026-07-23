@@ -23,7 +23,7 @@ Kisha rights.
 
 ## Runnable social kernel
 
-[`methods/engi.cljc`](methods/engi.cljc) is a portable pure state machine. It
+[`src/credits/methods/engi.cljc`](src/credits/methods/engi.cljc) is a portable pure state machine. It
 implements relational credit lines, two-party transfers, nonce replay protection,
 bounded heterogeneous Commons issuance, and replay invariants. Cryptographic
 verification is injected at the boundary, allowing Ed25519/passkey implementations

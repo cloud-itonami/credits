@@ -13,8 +13,10 @@ TitheRouter are optional boundary adapters, not the monetary source of truth.
 - [x] Relational credit limit from independently signed endorsements.
 - [x] Replay protection and zero-net-supply invariant.
 - [x] Bounded Commons issuance with heterogeneous role quorum.
-- [ ] Canonical event encoding + content hash test vectors.
-- [ ] Ed25519/WebAuthn verifier adapter on participant devices.
+- [x] Canonical event encoding + content hash test vectors (Clojure R1).
+- [x] Ed25519 verifier + device key envelope (WebAuthn adapter remains R2).
+- [x] Full untrusted-journal replay + deterministic state root.
+- [x] Contiguous participant nonce and fail-closed event dispatch.
 - [ ] Append-only kotoba/AT journal owned by each participant.
 - [ ] Gossip/merge and deterministic checkpoint root.
 - [ ] Offline three-device pilot; no etzhayyim server in the transaction path.
