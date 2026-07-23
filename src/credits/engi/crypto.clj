@@ -44,11 +44,19 @@
                      (codec/evidence-payload event evidence))))
 
 (defn verify-evidence?
-  "Resolve a signer DID/device id to its encoded Ed25519 public key."
+  "Resolve a signer to either an encoded Ed25519 key or a local verifier map.
+  A verifier map contains `:verify-evidence`, a pure function of payload and
+  proof. This lets WebAuthn/mobile keys remain non-exportable."
   [resolve-public-key event evidence]
   (and (= (:event-id evidence) (:id event))
-       (string? (:signature evidence))
        (when-let [key (resolve-public-key (:signer evidence))]
-         (verify-bytes? key
-                        (codec/evidence-payload event evidence)
-                        (:signature evidence)))))
+         (let [payload (codec/evidence-payload event evidence)]
+           (cond
+             (string? key)
+             (and (string? (:signature evidence))
+                  (verify-bytes? key payload (:signature evidence)))
+
+             (and (map? key) (fn? (:verify-evidence key)))
+             (boolean ((:verify-evidence key) payload (:proof evidence)))
+
+             :else false)))))

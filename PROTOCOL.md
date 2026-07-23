@@ -70,8 +70,8 @@ replay result.
 ## Honest production boundary
 
 The protocol implementation is production-shaped, but public launch additionally
-requires a physical multi-device pilot, WebAuthn adapter, independently operated
-network endpoints, mobile secure-key integration, external security review,
+requires a physical multi-device pilot, independently operated network
+endpoints, native mobile secure-key packaging, external security review,
 participant consent for any legacy export, and jurisdiction-specific legal/tax
 disclosure. None of those may be represented as complete merely because
 simulation tests pass.
@@ -89,7 +89,14 @@ simulation tests pass.
 - The adapter tests start two real loopback HTTP services, distribute different
   objects, tolerate an unreachable third service, gossip the union, restart a
   durable relay, and verify convergence and tamper rejection.
+- `clients/engi-webauthn-browser.mjs` requests a user-verified assertion with
+  `SHA-256(canonical evidence payload)` as its challenge.
+  `clients/engi-webauthn.mjs` independently verifies credential id, origin,
+  RP ID hash, user presence/verification, challenge, and ES256 signature.
+  `credits.engi.webauthn` performs the same checks for the replay key resolver,
+  so verification remains local and does not call an identity server.
 
 Public launch still requires independently hosted relay endpoints and a live PDS
-create/list roundtrip; local socket integration does not prove either external
-operator independence or external service availability.
+create/list roundtrip. WebAuthn credentials must still complete live enrollment
+and assertion ceremonies on target devices. Local fixtures do not prove external
+operator independence, external availability, or hardware UX.

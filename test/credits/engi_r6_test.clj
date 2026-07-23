@@ -27,6 +27,15 @@
     (is (zero? (:exit result)))
     (is (= "true" (.trim (:out result))))))
 
+(deftest webauthn-assertion-binds-device-presence-to-evidence
+  (let [result (shell/sh "node" "clients/engi-webauthn.mjs" "self-test")]
+    (is (zero? (:exit result)))
+    (is (= (str "{\"valid\":true,"
+                "\"wrongOriginRejected\":true,"
+                "\"wrongPayloadRejected\":true,"
+                "\"wrongRpRejected\":true}")
+           (.trim (:out result))))))
+
 (deftest audit-fails-closed-on-central-writer-and-invalid-state
   (let [manifest (slurp "actor-manifest.jsonld")
         manifest-audit (audit/audit-legacy-manifest manifest)]

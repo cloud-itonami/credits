@@ -45,7 +45,11 @@ TitheRouter are optional boundary adapters, not the monetary source of truth.
 - [x] Reproducible protocol/legacy-manifest audit.
 - [x] Corruption, tamper, missing-parent, fork, replay and quorum failure tests.
 - [x] 100,000-transition JVM benchmark with conservation check.
-- [ ] WebAuthn/mobile secure-key adapter.
+- [x] WebAuthn browser assertion + independent verifier bind ENGI evidence to
+      RP/origin/UV/device key.
+- [x] Accept registered WebAuthn credentials in the Clojure replay key resolver.
+- [ ] Native iOS Secure Enclave and Android Keystore packaging.
+- [ ] Live authenticator enrollment/assertion ceremony on target devices.
 - [ ] External security review by an independent maintainer.
 
 ## Substrate-boundary checks

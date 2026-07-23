@@ -41,7 +41,7 @@ function stripEvidence(value) {
   if (value && typeof value === "object") {
     return Object.fromEntries(
       Object.entries(value)
-        .filter(([key]) => !["signature", "event-id"].includes(key))
+        .filter(([key]) => !["signature", "event-id", "proof"].includes(key))
         .map(([key, item]) => [key, stripEvidence(item)]),
     );
   }

@@ -52,7 +52,7 @@
     (map? value)
     (into {}
           (keep (fn [[k v]]
-                  (when-not (#{:signature :event-id} k)
+                  (when-not (#{:signature :event-id :proof} k)
                     [k (without-signature v)])))
           value)
 
