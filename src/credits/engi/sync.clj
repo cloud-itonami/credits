@@ -22,7 +22,7 @@
       local
       (let [published (mapv #(safely
                               (fn [url]
-                                (transport/publish! url (:events local)))
+                                (transport/publish-all! url (:events local)))
                               %)
                             relay-urls)
             gossip (transport/gossip-once! relay-urls)

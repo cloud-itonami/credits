@@ -16,6 +16,9 @@
            (java.time Duration)))
 
 (def max-request-bytes (* 1024 1024))
+(def max-page-size 500)
+(def max-batch-events 100)
+(def target-batch-bytes (* 900 1024))
 
 (defn- response! [^HttpExchange exchange status body]
   (let [bytes (.getBytes (codec/canonical-string body) StandardCharsets/UTF_8)]
@@ -31,14 +34,21 @@
       (when (<= (alength bytes) max-request-bytes)
         (String. bytes StandardCharsets/UTF_8)))))
 
-(defn- query-ids [^URI uri]
+(defn- query-values [^URI uri parameter]
   (when-let [query (.getRawQuery uri)]
     (->> (str/split query #"&")
          (keep (fn [part]
-                 (when (str/starts-with? part "id=")
+                 (when (str/starts-with? part (str parameter "="))
                    (java.net.URLDecoder/decode
-                    (subs part 3) StandardCharsets/UTF_8))))
+                    (subs part (inc (count parameter)))
+                    StandardCharsets/UTF_8))))
          vec)))
+
+(defn- requested-limit [^URI uri]
+  (let [raw (first (query-values uri "limit"))]
+    (try
+      (min max-page-size (max 1 (Integer/parseInt (or raw "100"))))
+      (catch Exception _ 100))))
 
 (defn handler
   "Create a relay handler backed by an atom. The atom is a replaceable cache,
@@ -82,11 +92,18 @@
               (response! exchange 413 {:ok? false :error :request-too-large}))
 
             (and (= "GET" method) (= "/v1/events" path))
-            (response! exchange 200
-                       {:ok? true
-                        :events (relay/fetch @relay-state
-                                             (query-ids
-                                              (.getRequestURI exchange)))})
+            (let [uri (.getRequestURI exchange)
+                  ids (query-values uri "id")]
+              (if (seq ids)
+                (response! exchange 200
+                           {:ok? true
+                            :events (relay/fetch @relay-state ids)})
+                (response! exchange 200
+                           (assoc (relay/fetch-page
+                                   @relay-state
+                                   (first (query-values uri "cursor"))
+                                   (requested-limit uri))
+                                  :ok? true))))
 
             (and (= "GET" method) (= "/healthz" path))
             (response! exchange 200
@@ -148,21 +165,71 @@
   [base-url events]
   (request "POST" (str base-url "/v1/events") {:events (vec events)}))
 
+(defn- event-batches [events]
+  (reduce
+   (fn [batches event]
+     (let [event-size (alength (codec/canonical-bytes event))
+           current (peek batches)
+           current-size (reduce + (map #(alength (codec/canonical-bytes %))
+                                       current))]
+       (when (> event-size target-batch-bytes)
+         (throw (ex-info "Event exceeds relay batch limit"
+                         {:error :event-too-large :event-id (:id event)})))
+       (if (or (empty? current)
+               (and (< (count current) max-batch-events)
+                    (<= (+ current-size event-size) target-batch-bytes)))
+         (conj (pop batches) (conj current event))
+         (conj batches [event]))))
+   [[]]
+   events))
+
+(defn publish-all!
+  "Publish bounded batches so a large journal cannot exceed the relay request
+  limit. The result is successful only when every batch is accepted."
+  [base-url events]
+  (let [responses (mapv #(publish! base-url %) (event-batches events))]
+    {:ok? (every? #(= 200 (:status %)) responses)
+     :status (if (every? #(= 200 (:status %)) responses) 200
+                 (:status (first (remove #(= 200 (:status %)) responses))))
+     :batch-count (count responses)
+     :responses responses}))
+
 (defn health! [base-url]
   (request "GET" (str base-url "/healthz") nil))
 
 (defn fetch!
-  ([base-url] (fetch! base-url []))
+  ([base-url]
+   (loop [cursor nil
+          seen #{}
+          events []]
+     (let [query (str "?limit=" max-page-size
+                      (when cursor
+                        (str "&cursor="
+                             (java.net.URLEncoder/encode
+                              cursor StandardCharsets/UTF_8))))
+           page (request "GET" (str base-url "/v1/events" query) nil)
+           next-cursor (get-in page [:body :cursor])]
+       (cond
+         (not= 200 (:status page)) page
+         (and next-cursor (contains? seen next-cursor))
+         {:status 502 :body {:ok? false :error :repeated-relay-cursor}}
+         next-cursor
+         (recur next-cursor (conj seen next-cursor)
+                (into events (get-in page [:body :events])))
+         :else
+         (assoc-in page [:body :events]
+                   (into events (get-in page [:body :events])))))))
   ([base-url ids]
-   (let [query (when (seq ids)
-                 (str "?"
+   (if (seq ids)
+     (let [query (str "?"
                       (str/join
                        "&"
                        (map #(str "id="
                                   (java.net.URLEncoder/encode
                                    % StandardCharsets/UTF_8))
-                            ids))))]
-     (request "GET" (str base-url "/v1/events" query) nil))))
+                            ids)))]
+       (request "GET" (str base-url "/v1/events" query) nil))
+     (fetch! base-url))))
 
 (defn gossip-once!
   "Union immutable objects across reachable relays, then republish the union.
@@ -195,10 +262,10 @@
         events (mapv val (sort-by key by-id))
         published
         (mapv (fn [{:keys [url]}]
-                {:url url :response (publish! url events)})
+                {:url url :response (publish-all! url events)})
               reachable)]
     {:ok? (and (seq reachable)
-               (every? #(= 200 (get-in % [:response :status])) published))
+               (every? #(get-in % [:response :ok?]) published))
      :reachable (mapv :url reachable)
      :unreachable (mapv :url (remove #(= 200
                                         (get-in % [:response :status]))

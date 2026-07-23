@@ -111,3 +111,20 @@
               "ENGI_RELAY_JOURNAL" "/tmp/x"
               "ENGI_RELAY_PORT" "70000"})
             (catch clojure.lang.ExceptionInfo e (ex-data e)))))))
+
+(deftest relay-pagination-is-bounded-and-content-deterministic
+  (let [events (mapv (fn [value]
+                       (codec/with-event-id
+                        {:type :page-test :parents [] :value value}))
+                     (range 650))
+        instance (transport/start-relay! {:relay-id "paged"})
+        url (str "http://" (:host instance) ":" (:port instance))]
+    (try
+      (let [published (transport/publish-all! url events)]
+        (is (:ok? published))
+        (is (= 7 (:batch-count published))))
+      (let [all (get-in (transport/fetch! url) [:body :events])]
+        (is (= 650 (count all)))
+        (is (= (sort (map :id events)) (map :id all))))
+      (finally
+        ((:stop! instance))))))

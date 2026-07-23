@@ -89,6 +89,9 @@ simulation tests pass.
   after process restart without becoming a source of balances or event order.
   `clojure -M:relay` is the standalone operator entry point; its health response
   exposes only relay identity and immutable object count.
+  Enumeration is bounded to 500 content-id-sorted objects per page and publish
+  is split into bounded batches, preventing journal size from becoming one
+  unbounded HTTP allocation. Content-id enumeration is not ledger order.
 - `credits.engi.sync/sync-device!` is participant-side: it publishes the local
   durable journal, gossips reachable copies, performs dependency/conflict merge
   locally, and appends only verified events. Integration tests use three

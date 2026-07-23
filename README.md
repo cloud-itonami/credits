@@ -80,7 +80,8 @@ content union; it has no balance, mint, ordering, freeze, or resolution API.
 Internet-facing operators terminate TLS independently in front of this process.
 Participant clients call `credits.engi.sync/sync-device!` to merge relay
 contents into their own durable journal; relay arrival order is never copied as
-ledger order.
+ledger order. Fetches are paginated and publishes are bounded batches, while
+clients still reconstruct the complete content set before dependency merge.
 
 ## Integration direction
 

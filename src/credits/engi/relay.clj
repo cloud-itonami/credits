@@ -32,7 +32,18 @@
 (defn fetch [relay wanted-ids]
   (if (seq wanted-ids)
     (vec (keep #(get-in relay [:events %]) wanted-ids))
-    (vec (vals (:events relay)))))
+    (->> (:events relay) (sort-by key) (mapv val))))
+
+(defn fetch-page
+  "Content-id pagination is transport enumeration only, never event order."
+  [relay cursor limit]
+  (let [ids (->> (keys (:events relay))
+                 sort
+                 (drop-while #(and cursor (<= (compare % cursor) 0))))
+        selected (vec (take limit ids))
+        more? (seq (drop limit ids))]
+    {:events (mapv #(get-in relay [:events %]) selected)
+     :cursor (when more? (last selected))}))
 
 (defn union-from-relays [relays]
   (journal/merge-journals
