@@ -1,0 +1,164 @@
+(ns credits.engi-r7-adapters-test
+  (:require [clojure.test :refer [deftest is testing]]
+            [credits.engi.atproto :as atproto]
+            [credits.engi.codec :as codec]
+            [credits.engi.journal :as journal]
+            [credits.engi.relay-main :as relay-main]
+            [credits.engi.transport :as transport]))
+
+(def event-a
+  (codec/with-event-id
+   {:type :test-evidence :value 1 :parents []}))
+
+(def event-b
+  (codec/with-event-id
+   {:type :test-evidence :value 2 :parents [(:id event-a)]}))
+
+(deftest at-record-is-a-verifiable-copy-not-authority
+  (let [request (atproto/create-record-request
+                 "did:plc:alice" event-a "2026-07-23T12:00:00Z")
+        record (:record request)]
+    (is (= atproto/collection (:collection request)))
+    (is (= (subs (:id event-a) 4) (:rkey request)))
+    (is (= {:ok? true :event event-a}
+           (atproto/record->event record)))
+    (testing "PDS metadata cannot replace or mutate signed content"
+      (is (= :record-event-id-mismatch
+             (:error (atproto/record->event
+                      (assoc record :eventId "en1:forged")))))
+      (is (= :non-canonical-event
+             (:error (atproto/record->event
+                      (update record :canonicalEvent #(str " " %)))))))))
+
+(deftest two-real-http-relays-converge-without-order-authority
+  (let [r1 (transport/start-relay! {:relay-id "relay-a"})
+        r2 (transport/start-relay! {:relay-id "relay-b"})
+        u1 (str "http://" (:host r1) ":" (:port r1))
+        u2 (str "http://" (:host r2) ":" (:port r2))]
+    (try
+      (is (= 200 (:status (transport/publish! u1 [event-a]))))
+      (is (= 200 (:status (transport/publish! u2 [event-b]))))
+      (is (= {:ok? true :relay-id "relay-a" :event-count 1}
+             (:body (transport/health! u1))))
+      (let [gossip (transport/gossip-once! [u2 u1
+                                             "http://127.0.0.1:1"])]
+        (is (:ok? gossip))
+        (is (= 2 (:event-count gossip)))
+        (is (= ["http://127.0.0.1:1"] (:unreachable gossip))))
+      (let [events-1 (get-in (transport/fetch! u1) [:body :events])
+            events-2 (get-in (transport/fetch! u2) [:body :events])
+            merged (journal/merge-journals
+                    [{:events (into {} (map (juxt :id identity)) events-1)}
+                     {:events (into {} (map (juxt :id identity)) events-2)}])]
+        (is (:ok? merged))
+        (is (= [(:id event-a) (:id event-b)]
+               (mapv :id (:events merged)))))
+      (testing "a selected immutable object can be fetched"
+        (is (= [event-b]
+               (get-in (transport/fetch! u1 [(:id event-b)])
+                       [:body :events]))))
+      (testing "forged content is rejected at the network edge"
+        (let [forged (assoc event-a :value 99)
+              response (transport/publish! u1 [forged])]
+          (is (= 422 (:status response)))
+          (is (= :event-id-mismatch (get-in response [:body :error])))))
+      (finally
+        ((:stop! r1))
+        ((:stop! r2))))))
+
+(deftest durable-relay-recovers-after-process-restart
+  (let [file (java.io.File/createTempFile "engi-relay-" ".edn")
+        path (.getAbsolutePath file)]
+    (.delete file)
+    (try
+      (let [first-run (transport/start-relay!
+                       {:relay-id "durable" :journal-path path})
+            url (str "http://" (:host first-run) ":" (:port first-run))]
+        (is (= 200 (:status (transport/publish! url [event-a event-b]))))
+        ((:stop! first-run)))
+      (let [second-run (transport/start-relay!
+                        {:relay-id "durable" :journal-path path})
+            url (str "http://" (:host second-run) ":" (:port second-run))]
+        (try
+          (is (= #{(:id event-a) (:id event-b)}
+                 (set (map :id (get-in (transport/fetch! url)
+                                      [:body :events])))))
+          (finally
+            ((:stop! second-run)))))
+      (finally
+        (.delete (java.io.File. path))))))
+
+(deftest relay-process-configuration-fails-closed
+  (is (= {:relay-id "community-a"
+          :host "0.0.0.0"
+          :port 9090
+          :journal-path "/var/lib/engi/events.edn"}
+         (relay-main/config-from-env
+          {"ENGI_RELAY_ID" "community-a"
+           "ENGI_RELAY_HOST" "0.0.0.0"
+           "ENGI_RELAY_PORT" "9090"
+           "ENGI_RELAY_JOURNAL" "/var/lib/engi/events.edn"})))
+  (is (= :relay-id-required
+         (:error
+          (try
+            (relay-main/config-from-env {})
+            (catch clojure.lang.ExceptionInfo e (ex-data e))))))
+  (is (= :invalid-port
+         (:error
+          (try
+            (relay-main/config-from-env
+             {"ENGI_RELAY_ID" "x"
+              "ENGI_RELAY_JOURNAL" "/tmp/x"
+              "ENGI_RELAY_PORT" "70000"})
+            (catch clojure.lang.ExceptionInfo e (ex-data e)))))))
+
+(deftest relay-pagination-is-bounded-and-content-deterministic
+  (let [events (mapv (fn [value]
+                       (codec/with-event-id
+                        {:type :page-test :parents [] :value value}))
+                     (range 650))
+        instance (transport/start-relay! {:relay-id "paged"})
+        url (str "http://" (:host instance) ":" (:port instance))]
+    (try
+      (let [published (transport/publish-all! url events)]
+        (is (:ok? published))
+        (is (= 7 (:batch-count published))))
+      (let [all (get-in (transport/fetch! url) [:body :events])]
+        (is (= 650 (count all)))
+        (is (= (sort (map :id events)) (map :id all))))
+      (finally
+        ((:stop! instance))))))
+
+(deftest concurrent-relay-publishes-do-not-lose-events
+  (let [file (java.io.File/createTempFile "engi-concurrent-relay-" ".edn")
+        path (.getAbsolutePath file)
+        events (mapv (fn [value]
+                       (codec/with-event-id
+                        {:type :concurrent-publish
+                         :parents [] :value value}))
+                     (range 40))]
+    (.delete file)
+    (let [instance (transport/start-relay!
+                    {:relay-id "concurrent" :journal-path path})
+          url (str "http://" (:host instance) ":" (:port instance))]
+      (try
+        (let [responses
+              (->> events
+                   (mapv #(future (transport/publish! url [%])))
+                   (mapv deref))]
+          (is (every? #(= 200 (:status %)) responses))
+          (is (= (set (map :id events))
+                 (set (map :id (get-in (transport/fetch! url)
+                                      [:body :events]))))))
+        ((:stop! instance))
+        (let [restarted (transport/start-relay!
+                         {:relay-id "concurrent" :journal-path path})]
+          (try
+            (is (= (set (map :id events))
+                   (set (keys (:events @(:state restarted))))))
+            (finally
+              ((:stop! restarted)))))
+        (finally
+          ;; stop! is idempotent for the JDK server after the explicit restart
+          ((:stop! instance))
+          (.delete (java.io.File. path)))))))

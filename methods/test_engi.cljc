@@ -23,6 +23,7 @@
 
 (defn transfer [id from to amount nonce]
   {:id id :type :transfer :from from :to to :amount amount :nonce nonce
+   :parents [(str "credit-line:" from)]
    :signatures [{:signer from :event-id id}
                 {:signer to :event-id id}]})
 
@@ -66,7 +67,7 @@
     (testing "relational credit is bounded"
       (is (= :credit-limit-exceeded
              (:error (engi/apply-transfer
-                      s (transfer "tx-big" "did:alice" "did:bob" 51 2)
+                      s (transfer "tx-big" "did:alice" "did:bob" 51 1)
                       signature-ok?)))))))
 
 (deftest credit-limit-needs-independent-relations

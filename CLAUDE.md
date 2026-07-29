@@ -3,7 +3,7 @@
 > **SUPERSEDED FOR NEW VALUE FLOWS (2026-07-23):** The centrally issued
 > purchase/earn/spend ledger and GCC minter described below are legacy migration
 > inputs, not the canonical monetary design. New value flows use the ENGI mutual-
-> credit kernel in `README.md` + `methods/engi.cljc`: bilateral issuance, relational
+> credit kernel in `README.md` + `src/credits/methods/engi.cljc`: bilateral issuance, relational
 > credit limits, bounded heterogeneous Commons issuance, no admin mint, and no
 > balance-weighted governance. USDC/GCC/Kisha are adapters during migration only.
 

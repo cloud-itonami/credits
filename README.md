@@ -23,7 +23,7 @@ Kisha rights.
 
 ## Runnable social kernel
 
-[`methods/engi.cljc`](methods/engi.cljc) is a portable pure state machine. It
+[`src/credits/methods/engi.cljc`](src/credits/methods/engi.cljc) is a portable pure state machine. It
 implements relational credit lines, two-party transfers, nonce replay protection,
 bounded heterogeneous Commons issuance, and replay invariants. Cryptographic
 verification is injected at the boundary, allowing Ed25519/passkey implementations
@@ -39,6 +39,50 @@ multi-role Commons decision. Every client can replay the same event set and reje
 a checkpoint where mutual-credit net supply is non-zero or a participant exceeds
 their relational credit limit.
 
+R1 adds canonical encoding, content-derived ids, real Ed25519 evidence, and full
+untrusted replay. R2 adds participant/device journals, dependency-ordered merge,
+three-device convergence, explicit quarantine of concurrent offline spends, and
+guardian-threshold device-key recovery. A relay's arrival order never selects a
+winning spend.
+
+R3 persists participant journals with append/flush/fsync, supports replaceable
+content relays, and verifies threshold-signed regional checkpoints against a full
+replay. R4 adds plural standing credentials with epoch nullifiers, equal basic
+Kisha with no Phenotype input, and challenged Commons decisions with independent
+appeal juries.
+
+R5 adds source-diverse regional living-basket indices, explicit-rounding
+cross-region conversion, conservative multilateral netting, and opt-in legacy
+claims. A legacy credit balance has zero monetary effect until Commons review;
+the disabled legacy actor no longer advertises `graph.write`. Consent is a
+participant-signed event bound to the exported ledger root, not an
+administrator-set boolean.
+
+R6 adds an independent dependency-free Node.js verifier, cross-client canonical
+and Ed25519 vectors, protocol audits, corrupt/Byzantine input rejection, and a
+100,000-transition JVM benchmark. See [`PROTOCOL.md`](PROTOCOL.md).
+
+## Run an independent relay
+
+Each operator chooses their own relay id, storage path, host, and port:
+
+```bash
+ENGI_RELAY_ID=neighbourhood-a \
+ENGI_RELAY_HOST=127.0.0.1 \
+ENGI_RELAY_PORT=8080 \
+ENGI_RELAY_JOURNAL=/var/lib/engi/events.edn \
+clojure -M:relay
+```
+
+`GET /healthz`, `GET /v1/events`, and `POST /v1/events` are the only service
+surfaces. The process stores verified immutable events and can gossip their
+content union; it has no balance, mint, ordering, freeze, or resolution API.
+Internet-facing operators terminate TLS independently in front of this process.
+Participant clients call `credits.engi.sync/sync-device!` to merge relay
+contents into their own durable journal; relay arrival order is never copied as
+ledger order. Fetches are paginated and publishes are bounded batches, while
+clients still reconstruct the complete content set before dependency merge.
+
 ## Integration direction
 
 1. Each participant stores their signed events in their own append-only kotoba/AT
@@ -50,7 +94,8 @@ their relational credit limit.
 5. Existing USDC/Kisha/GCC paths remain migration adapters only. They are not the
    ENGI source of truth.
 
-R0 deliberately does not pretend to provide physical enforcement, legal tender
-status, Sybil-proof personhood, or production key recovery. The next integration
-gate is a real Ed25519/passkey envelope and kotoba journal adapter, followed by an
-offline three-device field pilot.
+The implementation does not pretend to provide physical enforcement, legal tender
+status, or Sybil-proof personhood. The remaining production gates are live
+participant-controlled PDS and authenticator ceremonies, independently hosted
+relays, a physical three-device pilot, consent-based legacy reconciliation, and
+independent security/legal review.

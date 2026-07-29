@@ -1,9 +1,10 @@
 {
   "@context": "https://etzhayyim.com/ns/actor/v1",
   "@id": "did:web:credits.etzhayyim.com",
+  "enabled": false,
+  "deprecationReason": "Central earn/purchase/spend writer superseded by participant-owned ENGI journals; retained read-only for opt-in reconciliation.",
   "capabilities": [
     "graph.query",
-    "graph.write",
     "agent.chat",
     "derive:social"
   ],
@@ -17,7 +18,7 @@
   "domainKnowledgeRequired": true,
   "runtime": "k8s-langserver",
   "edge": "sveltekit-proxy",
-  "legacyExecutionTier": "T1",
+  "legacyExecutionTier": "T3",
   "governance": {
     "classification": "internal",
     "raci": "responsible"
