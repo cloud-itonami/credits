@@ -1,0 +1,72 @@
+;; GENERATED from example-journal.edn by credits.engi.valueflows.
+;; DO NOT EDIT BY HAND. Regenerate:
+;;   clojure -M:dev -m credits.dev.generate-example-journal
+;; credits.engi-valueflows-test re-projects the corpus on every run and
+;; compares, so a drift in the mapping fails the suite.
+[{:vf.event/onhand-effect "decrementIncrement",
+  :vf.event/provider-id "did:alice",
+  :vf.event/resource-quantity-unit "micro-en",
+  :vf.event/input-output "notApplicable",
+  :vf.event/resource-quantity-value 60,
+  :vf.event/to-resource-inventoried-as "engi-balance:did:bob",
+  :source/dataset "valueflows",
+  :vf.event/note
+  "ENGI transfer en1:8c475082e801710e6e114f89b4f9aa1d157ee480ee1b09199e86763cc5aa8cff",
+  :vf.event/action "transfer",
+  :db/id -1,
+  :vf.event/resource-inventoried-as "engi-balance:did:alice",
+  :vf.event/receiver-id "did:bob",
+  :vf.event/accounting-effect "decrementIncrement",
+  :vf.event/effort-based? false}
+ {:vf.event/onhand-effect "decrementIncrement",
+  :vf.event/provider-id "did:bob",
+  :vf.event/resource-quantity-unit "micro-en",
+  :vf.event/input-output "notApplicable",
+  :vf.event/resource-quantity-value 25,
+  :vf.event/to-resource-inventoried-as "engi-balance:did:carol",
+  :source/dataset "valueflows",
+  :vf.event/note
+  "ENGI transfer en1:f0ec01432b55e7932f113b6433b546f4cdefeaa27db5194b3faf462aed568776",
+  :vf.event/action "transfer",
+  :db/id -2,
+  :vf.event/resource-inventoried-as "engi-balance:did:bob",
+  :vf.event/receiver-id "did:carol",
+  :vf.event/accounting-effect "decrementIncrement",
+  :vf.event/effort-based? false}
+ {:vf.event/onhand-effect "increment",
+  :vf.event/resource-quantity-unit "micro-en",
+  :vf.event/input-output "notApplicable",
+  :vf.event/resource-quantity-value 30,
+  :source/dataset "valueflows",
+  :vf.event/note
+  "ENGI Commons issuance en1:6524fdfe28523a083114fcc1e22c58c55ebb063d72e1e40e78aa5392a37d6361 epoch 2026-08",
+  :vf.event/action "raise",
+  :db/id -3,
+  :vf.event/resource-inventoried-as "engi-balance:did:carer",
+  :vf.event/receiver-id "did:carer",
+  :vf.event/accounting-effect "increment",
+  :vf.event/effort-based? false}
+ {:vf.event/onhand-effect "decrementIncrement",
+  :vf.event/provider-id "did:carol",
+  :vf.event/resource-quantity-unit "micro-en",
+  :vf.event/input-output "notApplicable",
+  :vf.event/resource-quantity-value 25,
+  :vf.event/to-resource-inventoried-as "engi-balance:did:alice",
+  :source/dataset "valueflows",
+  :vf.event/note
+  "ENGI transfer en1:12d3be2c0fa5d52ae45db3ae41b227981711c63deba47998ad6204e0c8564eaa",
+  :vf.event/action "transfer",
+  :db/id -4,
+  :vf.event/resource-inventoried-as "engi-balance:did:carol",
+  :vf.event/receiver-id "did:alice",
+  :vf.event/accounting-effect "decrementIncrement",
+  :vf.event/effort-based? false}
+ {:vf.coverage/commitments-offered 0,
+  :vf.coverage/commitments-projected 0,
+  :source/dataset "valueflows",
+  :db/id -5,
+  :vf.coverage/complete? true,
+  :vf.coverage/events-offered 4,
+  :vf.coverage/events-projected 4,
+  :vf.coverage/resources-projected 0,
+  :vf.coverage/resources-offered 0}]

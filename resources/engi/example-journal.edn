@@ -1,0 +1,195 @@
+;; SYNTHETIC CORPUS -- generated once by
+;; dev/credits/dev/generate_example_journal.clj and committed. Every event here was
+;; accepted by the real kernel under real Ed25519 verification and a full
+;; replay, which is what makes it worth committing.
+;;
+;; IT IS NOT A RECORD OF ANYONE'S ECONOMIC ACTIVITY. Do not cite balances
+;; or amounts here as measurements of anything.
+;;
+;; Regenerating produces different keys and signatures (keypairs are
+;; random), so this file is a fixture, not a build output. What IS
+;; regenerated on every test run is example-journal.valueflows.edn.
+#:corpus{:synthetic? true,
+         :generated-by "dev/credits/dev/generate_example_journal.clj",
+         :state-root
+         "en1:95ce16c0741bd31584fe1b84820173e88a86a032909f31b1531377cd56a12492",
+         :balances
+         {"did:alice" -35,
+          "did:bob" 35,
+          "did:carer" 30,
+          "did:carol" 0},
+         :public-keys
+         {"did:alice"
+          "MCowBQYDK2VwAyEAeQAQkZ16EvkTLRsxRAGhjSEqZp82Fbp_yLJf0fuOacU",
+          "did:bob"
+          "MCowBQYDK2VwAyEAs__o90tB6azkiQbBPDQVFR3ZpoEQX8OooxSk_T7eBEY",
+          "did:carer"
+          "MCowBQYDK2VwAyEAkeCLtbWA_PnnTGhfdObcgGvFlpzGgN0jcee0-hVTwJ0",
+          "did:carol"
+          "MCowBQYDK2VwAyEAfeeNNgw8JTQKyb9pta3stUyri3_oPP2xO2JJeQB8QQk",
+          "did:local-1"
+          "MCowBQYDK2VwAyEA7dUkOGBBM_4WBqIJTdxcH1dQMLOHQ7oHbdnBI6bnNdQ",
+          "did:local-2"
+          "MCowBQYDK2VwAyEAtTXZSz6KWm5XJOCq2Oy14CRbBy0yt4cAKpdAUDIY57o",
+          "did:river"
+          "MCowBQYDK2VwAyEAyXrsHhX2N68Pt6cMOxV7xsEWN25LCXY20tnF4CbMZSU",
+          "did:survey"
+          "MCowBQYDK2VwAyEA3IIdf9l_19l4MeOLKSb2cb-WMZCQVZr0Of-oKO2RpTg"},
+         :events
+         [{:type :credit-line,
+           :subject "did:alice",
+           :endorsements
+           [{:signer "did:bob",
+             :guarantor "did:bob",
+             :subject "did:alice",
+             :limit 100,
+             :event-id
+             "en1:c2a85674a55b37f7b6593ab9eec066765e55b97870ed986d1fbe61992b04d6a5",
+             :signature
+             "EYzXUnX8dG6zAIAbHWMfubfIryX6YcKhYHPqN88CATIfi1C8E6VW7At-JQdYlJJxHh9Te_cOvWGqTrO16hl_Cg"}
+            {:signer "did:carol",
+             :guarantor "did:carol",
+             :subject "did:alice",
+             :limit 80,
+             :event-id
+             "en1:c2a85674a55b37f7b6593ab9eec066765e55b97870ed986d1fbe61992b04d6a5",
+             :signature
+             "6lqj65L9akUwwgjWEptHXD9uA9V8_PdpGZrBF1b696VgYLXwLDT88Ed74W8g_Jk2IX0Nr0pOIiYMjuLH9-zTDQ"}],
+           :id
+           "en1:c2a85674a55b37f7b6593ab9eec066765e55b97870ed986d1fbe61992b04d6a5"}
+          {:type :credit-line,
+           :subject "did:bob",
+           :endorsements
+           [{:signer "did:alice",
+             :guarantor "did:alice",
+             :subject "did:bob",
+             :limit 90,
+             :event-id
+             "en1:92b618e688ba4e24d333c2b5d2c3bb59c9ac62ce7faf8d918a8185cf70a053ae",
+             :signature
+             "st_PiNT0yOqx-eAere3x9Ngw617_Q3jSQNTyVkIYVUDeu_LVkK31_B5ncFIcp7cSIiCZJ9KPD7fGY4hjYXD5Dw"}
+            {:signer "did:carol",
+             :guarantor "did:carol",
+             :subject "did:bob",
+             :limit 70,
+             :event-id
+             "en1:92b618e688ba4e24d333c2b5d2c3bb59c9ac62ce7faf8d918a8185cf70a053ae",
+             :signature
+             "h6SbdIYCS63dVPK3mnqZkOIwpBWMJjF6p49ce4gRBxI4IB1cZcXYP7_o0xA8mH3RIR145lqfOdmAHkRjEc2PCg"}],
+           :id
+           "en1:92b618e688ba4e24d333c2b5d2c3bb59c9ac62ce7faf8d918a8185cf70a053ae"}
+          {:type :credit-line,
+           :subject "did:carol",
+           :endorsements
+           [{:signer "did:alice",
+             :guarantor "did:alice",
+             :subject "did:carol",
+             :limit 60,
+             :event-id
+             "en1:04841f6cc878af84d9cb14d2518b5b14dab1a2496b8f6ba75041c221842f7be4",
+             :signature
+             "KcldSsoLpPakD43GgU-mrtPiu69QKdk1zhMlcNlRGuhvM4SUTVYJ3k0GEjmSchPLdbziXBQcv3KBzbjRqSujAw"}
+            {:signer "did:bob",
+             :guarantor "did:bob",
+             :subject "did:carol",
+             :limit 50,
+             :event-id
+             "en1:04841f6cc878af84d9cb14d2518b5b14dab1a2496b8f6ba75041c221842f7be4",
+             :signature
+             "mmvi_Gy5ux6JylhQY6y5Spy_fzJ58JoZncSJ5V-O64AjVzPYY57teJdq-37RVc9Mx-uCUZAH-ld0Ae1iDBIODw"}],
+           :id
+           "en1:04841f6cc878af84d9cb14d2518b5b14dab1a2496b8f6ba75041c221842f7be4"}
+          {:type :transfer,
+           :from "did:alice",
+           :to "did:bob",
+           :amount 60,
+           :nonce 1,
+           :parents
+           ["en1:c2a85674a55b37f7b6593ab9eec066765e55b97870ed986d1fbe61992b04d6a5"],
+           :signatures
+           [{:signer "did:alice",
+             :event-id
+             "en1:8c475082e801710e6e114f89b4f9aa1d157ee480ee1b09199e86763cc5aa8cff",
+             :signature
+             "yFXlrvnshtNKOG-Y9zZMV83Y-JGGLCYC2UCG4vlK8UWCU9ws9Tdcc8UiIjWWXvThW4ecWwqxpw8Kw9d3XDPdAw"}
+            {:signer "did:bob",
+             :event-id
+             "en1:8c475082e801710e6e114f89b4f9aa1d157ee480ee1b09199e86763cc5aa8cff",
+             :signature
+             "nwghlfthPF9s8nK-Y5TU2xuycEBrA3UwCMdjbc1zTpQtGBZ0aEZkURmoBXX6-WgyeuGrdbXaTz_v6-wNyEN3Bw"}],
+           :id
+           "en1:8c475082e801710e6e114f89b4f9aa1d157ee480ee1b09199e86763cc5aa8cff"}
+          {:type :transfer,
+           :from "did:bob",
+           :to "did:carol",
+           :amount 25,
+           :nonce 1,
+           :parents
+           ["en1:92b618e688ba4e24d333c2b5d2c3bb59c9ac62ce7faf8d918a8185cf70a053ae"
+            "en1:8c475082e801710e6e114f89b4f9aa1d157ee480ee1b09199e86763cc5aa8cff"],
+           :signatures
+           [{:signer "did:bob",
+             :event-id
+             "en1:f0ec01432b55e7932f113b6433b546f4cdefeaa27db5194b3faf462aed568776",
+             :signature
+             "FGi6yuvFW3xpZmhezRMgQes5wOAMGP-sqoNnAdlZKh8Z2yiIifr7J5qk9NagcmBUmwIncqwThaT3QwXMcoLBBw"}
+            {:signer "did:carol",
+             :event-id
+             "en1:f0ec01432b55e7932f113b6433b546f4cdefeaa27db5194b3faf462aed568776",
+             :signature
+             "8oiUPBfwX5iGfKeWS1_qANGxX3sAvsQlSVqpJHK1I8kbGkvRr8pCVqNhCcTxjtin4Go7BVxCkqDsmxvDRcy7BA"}],
+           :id
+           "en1:f0ec01432b55e7932f113b6433b546f4cdefeaa27db5194b3faf462aed568776"}
+          {:type :commons-issuance,
+           :recipient "did:carer",
+           :amount 30,
+           :epoch "2026-08",
+           :epoch-cap 100,
+           :attestations
+           [{:signer "did:local-1",
+             :role :local-community,
+             :event-id
+             "en1:6524fdfe28523a083114fcc1e22c58c55ebb063d72e1e40e78aa5392a37d6361",
+             :signature
+             "lC6J_Q-wKSn7wRogkXnyqDKDJXBo8asiUhsLf_K30AtERvnk-9XyZhTbzQkZhaxyk6tZodKoE8dvtticsu3ABQ"}
+            {:signer "did:local-2",
+             :role :local-community,
+             :event-id
+             "en1:6524fdfe28523a083114fcc1e22c58c55ebb063d72e1e40e78aa5392a37d6361",
+             :signature
+             "MmUBL32CjmHDOma-Gh31TMnoI_rWeBhEHOG2glJaWy1l8enjT9bbINP0NfuI_8lA2Qvll3uXhieg5ygf9bvyAQ"}
+            {:signer "did:survey",
+             :role :independent-witness,
+             :event-id
+             "en1:6524fdfe28523a083114fcc1e22c58c55ebb063d72e1e40e78aa5392a37d6361",
+             :signature
+             "DTzKjZAbDT6EwOlLO5nyDSOv1GSeCMhPnix8BS0MNARKvcgxFk73YI3lQFI-rHp6Cd0m_2hsL2O6F3vvs6qIDA"}
+            {:signer "did:river",
+             :role :commons-guardian,
+             :event-id
+             "en1:6524fdfe28523a083114fcc1e22c58c55ebb063d72e1e40e78aa5392a37d6361",
+             :signature
+             "y9XxhgW-0aqHsd0AlxdcTP2njupIT3D4yIMC_tSI_wUokiJMUd40-w0BlovY7xDJuJkB_MlL70wdf683C_DNDQ"}],
+           :id
+           "en1:6524fdfe28523a083114fcc1e22c58c55ebb063d72e1e40e78aa5392a37d6361"}
+          {:type :transfer,
+           :from "did:carol",
+           :to "did:alice",
+           :amount 25,
+           :nonce 1,
+           :parents
+           ["en1:04841f6cc878af84d9cb14d2518b5b14dab1a2496b8f6ba75041c221842f7be4"
+            "en1:f0ec01432b55e7932f113b6433b546f4cdefeaa27db5194b3faf462aed568776"],
+           :signatures
+           [{:signer "did:carol",
+             :event-id
+             "en1:12d3be2c0fa5d52ae45db3ae41b227981711c63deba47998ad6204e0c8564eaa",
+             :signature
+             "f6mbIXdW5aAza8TxnRmV64iy0jOGexy45NAPT7Ngf4Ggc2FZnfay4zIObz4Wb3IUGVC3a9rjalRi20PpyP7sBg"}
+            {:signer "did:alice",
+             :event-id
+             "en1:12d3be2c0fa5d52ae45db3ae41b227981711c63deba47998ad6204e0c8564eaa",
+             :signature
+             "8cifTt0HEgUrnbqmfvR1k20bT7pzgVDgF2gF-n8l-NZ_NArMEQF_TB9LF4N_IopeJTK0Zz0y7RHqW-V87OrcBw"}],
+           :id
+           "en1:12d3be2c0fa5d52ae45db3ae41b227981711c63deba47998ad6204e0c8564eaa"}]}

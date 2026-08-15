@@ -15,15 +15,24 @@
    writes nothing. If you find yourself wanting to admit an event here, the
    answer is no.
 
-   ## Kinds are distinguished by shape, not by a tag
+   ## `:type` is authoritative; shape is the fallback
 
-   The kernel does not stamp `:accepted-events` with a type. A transfer carries
-   `:from`/`:to`/`:amount`/`:nonce`, a Commons issuance carries
-   `:recipient`/`:epoch`/`:epoch-cap`, a credit line carries
-   `:subject`/`:endorsements`. An event matching none of those is
-   `:unclassified` and is COUNTED AND RETURNED, never dropped — a projection
-   that silently skipped an event shape would report a smaller ledger that
-   looks complete.
+   `credits.engi.replay/apply-event` dispatches on `:type` and rejects anything
+   else with `:unknown-event-type`, so `:type` is what the kernel itself
+   believed the event was: `:transfer`, `:commons-issuance`, `:credit-line`.
+   This projection reads it first.
+
+   Shape is kept as a FALLBACK for untagged events (the pure kernel functions
+   in `credits.methods.engi` do not require `:type`, so a caller can hand one
+   in without it): a transfer carries `:from`/`:to`/`:amount`, a Commons
+   issuance `:recipient`/`:amount`/`:epoch`, a credit line
+   `:subject`/`:endorsements`. `classify*` reports which of the two answered.
+
+   A DECLARED type whose shape cannot support it — `:type :transfer` with no
+   `:from` — is a conflict, reported rather than projected. Projecting it would
+   invent a flow with no payer. An event matching nothing is `:unclassified`
+   and is COUNTED AND RETURNED, never dropped: a projection that silently
+   skipped an event shape would report a smaller ledger that looks complete.
 
    ## The unit is micro-EN
 
@@ -58,17 +67,48 @@
 
 ;; ── classification ────────────────────────────────────────────────────────
 
-(defn classify
-  "=> :transfer | :commons-issuance | :credit-line | :unclassified
+(def kinds
+  "The three types `credits.engi.replay/apply-event` dispatches on. Anything
+   else it rejects as :unknown-event-type, so this set is not ours to extend."
+  #{:transfer :commons-issuance :credit-line})
 
-   By shape, because the kernel does not tag accepted events."
-  [e]
+(defn- shape-of [e]
   (cond
-    (not (map? e)) :unclassified
+    (not (map? e)) nil
     (and (:from e) (:to e) (contains? e :amount)) :transfer
     (and (:recipient e) (contains? e :amount) (contains? e :epoch)) :commons-issuance
     (and (:subject e) (contains? e :endorsements)) :credit-line
-    :else :unclassified))
+    :else nil))
+
+(defn classify*
+  "=> {:kind k :source :type|:shape|:none :conflict? bool}
+
+   `:type` wins, because that is what the kernel dispatched on. `:conflict?`
+   marks a declared type the record cannot support — projecting a :transfer
+   with no :from would invent a flow with no payer."
+  [e]
+  (let [declared (when (map? e) (:type e))
+        shape (shape-of e)]
+    (cond
+      (contains? kinds declared)
+      ;; A conflict is any declared type the record cannot support, which
+      ;; includes a record whose shape is not recognisable AT ALL -- not only
+      ;; one that looks like a different kind. `(and (some? shape) ...)` was the
+      ;; first version and it let `{:type :transfer :to "bob"}` through, which
+      ;; projected a flow with :provider nil and a payer balance of
+      ;; "engi-balance:".
+      {:kind declared :source :type
+       :conflict? (not= shape declared)
+       :shape shape}
+
+      (some? declared) {:kind :unclassified :source :type :declared declared :conflict? false}
+      (some? shape) {:kind shape :source :shape :conflict? false}
+      :else {:kind :unclassified :source :none :conflict? false})))
+
+(defn classify
+  "=> :transfer | :commons-issuance | :credit-line | :unclassified"
+  [e]
+  (:kind (classify* e)))
 
 (defn non-economic?
   "A credit line changes what a participant MAY do, not what moved."
@@ -79,10 +119,15 @@
 
 (defn ->economic-event
   "One accepted ENGI event -> one Valueflows EconomicEvent, or nil when the
-   event is not economic. Returns nil rather than a zero-quantity event: a
-   credit line is not a transfer of nothing."
+   event is not economic OR its declared type conflicts with its shape.
+
+   nil rather than a zero-quantity event: a credit line is not a transfer of
+   nothing, and a :transfer with no :from is not a transfer from nobody."
   [e]
-  (case (classify e)
+  (let [c (classify* e)]
+    (if (:conflict? c)
+      nil
+      (case (:kind c)
     :transfer
     {:action :transfer
      :provider (:from e)
@@ -107,7 +152,7 @@
      :engi/epoch (:epoch e)
      :engi/attestations (count (:attestations e))}
 
-    nil))
+      nil))))
 
 ;; ── many ──────────────────────────────────────────────────────────────────
 
@@ -125,19 +170,28 @@
    not a pass: `:empty-input?` is set and `:ok?` is false, because a projection
    of nothing must not read as a ledger with nothing wrong in it."
   [accepted-events]
-  (let [kinds (mapv (juxt classify identity) accepted-events)
-        by-kind (frequencies (map first kinds))
-        unclassified (mapv second (filter #(= :unclassified (first %)) kinds))
-        credit-lines (mapv #(:id (second %)) (filter #(= :credit-line (first %)) kinds))
-        events (vec (keep #(->economic-event (second %)) kinds))]
+  (let [rows (mapv (fn [e] (assoc (classify* e) :event e)) accepted-events)
+        by-kind (frequencies (map :kind rows))
+        by-source (frequencies (map :source rows))
+        unclassified (mapv :event (filter #(= :unclassified (:kind %)) rows))
+        conflicts (mapv (fn [r] {:id (:id (:event r)) :declared (:kind r) :shape (:shape r)})
+                        (filter :conflict? rows))
+        credit-lines (mapv #(:id (:event %)) (filter #(= :credit-line (:kind %)) rows))
+        events (vec (keep #(->economic-event (:event %)) rows))]
     {:ok? (pos? (count accepted-events))
      :empty-input? (zero? (count accepted-events))
      :scanned (count accepted-events)
      :events events
      :by-kind by-kind
+     ;; how each event was classified, so "the corpus carries :type" and "we
+     ;; guessed from shape" are distinguishable in the output
+     :by-source by-source
      :non-economic credit-lines
      :unclassified unclassified
-     :complete? (and (pos? (count accepted-events)) (empty? unclassified))}))
+     :type-shape-conflicts conflicts
+     :complete? (and (pos? (count accepted-events))
+                     (empty? unclassified)
+                     (empty? conflicts))}))
 
 (defn ->datoms
   "Projected events as tx-data for the workspace datom plane. Delegates to

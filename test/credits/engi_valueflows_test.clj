@@ -6,6 +6,9 @@
    this namespace — it cannot resolve the ws-valueflo-vocabulary git dependency,
    so adding a line there would break that runner rather than test anything."
   (:require [clojure.test :refer [deftest is testing]]
+            [clojure.edn :as edn]
+            [clojure.java.io :as io]
+            [credits.engi.replay :as replay]
             [credits.engi.valueflows :as vf]
             [valueflows.event :as vf-event]
             [valueflows.unit :as vf-unit]))
@@ -24,12 +27,38 @@
 
 ;; ── classification ────────────────────────────────────────────────────────
 
-(deftest kinds-are-told-apart-by-shape
-  (is (= :transfer (vf/classify (transfer "t1" "alice" "bob" 500 1))))
-  (is (= :commons-issuance (vf/classify (issuance "c1" "carol" 300 "e1"))))
-  (is (= :credit-line (vf/classify (credit-line "l1" "alice"))))
-  (is (= :unclassified (vf/classify {:id "x" :something "else"})))
-  (is (= :unclassified (vf/classify "not-a-map"))))
+(deftest type-is-authoritative-and-shape-is-the-fallback
+  (testing ":type wins, because that is what replay/apply-event dispatches on"
+    (is (= {:kind :transfer :source :type :conflict? false :shape :transfer}
+           (vf/classify* (assoc (transfer "t1" "alice" "bob" 500 1) :type :transfer))))
+    (is (= :commons-issuance
+           (vf/classify (assoc (issuance "c1" "carol" 300 "e1") :type :commons-issuance)))))
+  (testing "shape answers for an untagged event -- the pure kernel fns do not require :type"
+    (is (= :shape (:source (vf/classify* (transfer "t1" "alice" "bob" 500 1)))))
+    (is (= :transfer (vf/classify (transfer "t1" "alice" "bob" 500 1))))
+    (is (= :commons-issuance (vf/classify (issuance "c1" "carol" 300 "e1"))))
+    (is (= :credit-line (vf/classify (credit-line "l1" "alice")))))
+  (testing "a type the kernel would reject as :unknown-event-type is unclassified here too"
+    (is (= :unclassified (vf/classify {:type :teleport :from "a" :to "b" :amount 1}))))
+  (testing "no type and no recognisable shape"
+    (is (= :unclassified (vf/classify {:id "x" :something "else"})))
+    (is (= :unclassified (vf/classify "not-a-map")))
+    (is (= :none (:source (vf/classify* {:id "x"}))))))
+
+(deftest a-declared-type-its-shape-cannot-support-is-a-conflict
+  ;; :type :transfer with no :from would project a flow with no payer.
+  (let [broken {:id "t9" :type :transfer :to "bob" :amount 500}
+        c (vf/classify* broken)]
+    (is (:conflict? c))
+    (is (= :transfer (:kind c)) "the declared type is still reported")
+    (is (nil? (:shape c)) "but nothing in the record supports it")
+    (is (nil? (vf/->economic-event broken)) "so it is not projected"))
+  (testing "and the projection reports it rather than quietly dropping it"
+    (let [p (vf/project [{:id "t9" :type :transfer :to "bob" :amount 500}])]
+      (is (false? (:complete? p)))
+      (is (= 1 (count (:type-shape-conflicts p))))
+      (is (= "t9" (:id (first (:type-shape-conflicts p)))))
+      (is (empty? (:events p))))))
 
 (deftest a-credit-line-is-not-a-transfer-of-nothing
   (is (nil? (vf/->economic-event (credit-line "l1" "alice")))
@@ -159,3 +188,62 @@
     (is (= 1 (count (:events p))))
     (is (empty? (:engi/signers (first (:events p))))
         "with no signers recorded — the absence is visible, not filled in")))
+
+;; ── the committed corpus, and the ratchet on the mapping ───────────────────
+
+(def corpus
+  (edn/read-string (slurp (or (io/resource "resources/engi/example-journal.edn")
+                              "resources/engi/example-journal.edn"))))
+
+(def committed-projection
+  (edn/read-string (slurp (or (io/resource "resources/engi/example-journal.valueflows.edn")
+                              "resources/engi/example-journal.valueflows.edn"))))
+
+(deftest the-corpus-is-genuinely-kernel-accepted
+  ;; This is what makes a synthetic corpus worth committing: every event in it
+  ;; passes real Ed25519 verification, real nonce contiguity, real credit-line
+  ;; parenthood and a real epoch cap. A hand-written fixture would exercise the
+  ;; projection against shapes the kernel would never have produced.
+  (let [pub (:corpus/public-keys corpus)
+        r (replay/replay (:corpus/events corpus) pub)]
+    (is (:ok? r) (str "replay rejected the committed corpus: " (:error r)))
+    (is (= (:corpus/state-root corpus) (:state-root r))
+        "and it replays to exactly the recorded state root")
+    (is (= (:corpus/balances corpus) (into (sorted-map) (:balances (:state r)))))))
+
+(deftest the-corpus-carries-type-so-the-projection-does-not-have-to-guess
+  ;; The classifier prefers :type, which is what replay/apply-event dispatches
+  ;; on. An earlier draft of this projection guessed from shape and asserted in
+  ;; its own docstring that the kernel did not tag events -- reading the corpus
+  ;; path is what corrected that.
+  (let [p (vf/project (:corpus/events corpus))]
+    (is (= {:type 7} (:by-source p))
+        "every event in a real journal is tagged; shape is only a fallback")
+    (is (empty? (:type-shape-conflicts p)))))
+
+(deftest projecting-the-committed-corpus-reproduces-the-committed-projection
+  ;; The ratchet. If the mapping changes, this fails, and the change has to be
+  ;; deliberate: regenerate and read the diff.
+  (let [fresh (:tx-data (vf/->datoms (:corpus/events corpus)))]
+    (is (= committed-projection fresh)
+        "the mapping drifted; run clojure -M:dev -m credits.dev.generate-example-journal and read the diff")
+    (is (= 5 (count fresh)) "four economic events and one coverage entity")))
+
+(deftest the-projection-of-the-corpus-agrees-with-the-kernel-about-supply
+  ;; The two sides of the join must tell the same story: the balances the kernel
+  ;; replayed to, and the totals the projection computes.
+  (let [n (vf/net-supply (:corpus/events corpus))
+        kernel-total (reduce + 0 (vals (:corpus/balances corpus)))]
+    (is (:ok? n))
+    (is (= kernel-total (:total n))
+        "the projection's total equals the sum of the kernel's balances")
+    (is (= 30 (:issued n)) "only the Commons issuance raised supply")
+    (is (= 0 (:mutual-credit-net n)) "everything else nets to zero")))
+
+(deftest the-corpus-says-it-is-synthetic
+  ;; A committed corpus that read as production data would be worse than none.
+  (is (true? (:corpus/synthetic? corpus)))
+  (is (re-find #"NOT A RECORD OF ANYONE'S ECONOMIC ACTIVITY"
+               (slurp (or (io/resource "resources/engi/example-journal.edn")
+                          "resources/engi/example-journal.edn")))
+      "the file says so in its own header, not only here"))

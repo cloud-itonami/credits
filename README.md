@@ -52,9 +52,31 @@ the total unchanged and only Commons issuance raised it. If a projection ever
 broke that, the vocabulary layer would be telling a different story about the
 same ledger than the kernel does.
 
+`:type` is authoritative — `credits.engi.replay/apply-event` dispatches on it and
+rejects anything else — with shape as the fallback for untagged events. A
+declared type the record cannot support (`:type :transfer` with no `:from`) is a
+reported conflict, not a projected flow with no payer.
+
+### A committed corpus, and a ratchet on the mapping
+
+`resources/engi/example-journal.edn` is a small **synthetic** society: seven
+events, every one accepted by the real kernel under real Ed25519 verification
+and a full replay, replaying to a recorded state root with balances
+`{alice -35, bob 35, carer 30, carol 0}` — summing to exactly the 30 of Commons
+issuance. It is a fixture, not a record of anyone's activity, and the file says
+so in its own header.
+
+`resources/engi/example-journal.valueflows.edn` is its projection, regenerated
+and compared on every test run. If the mapping drifts, the suite fails and says
+what to run. Regenerate deliberately with:
+
 ```bash
-clojure -M:test -n credits.engi-valueflows-test
+clojure -M:dev -m credits.dev.generate-example-journal   # writes both files
+clojure -M:test -n credits.engi-valueflows-test          # 19 tests / 85 assertions
 ```
+
+The generator refuses to write anything if the kernel rejects the society it
+built, so a corpus can never be committed that the kernel would not accept.
 
 ## Runnable social kernel
 

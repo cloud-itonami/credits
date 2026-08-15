@@ -9,7 +9,11 @@
          :git/sha "95e552dcacfb54f89b539f5a394bdfe83c0a0df6"}}
  :aliases
  {:relay {:main-opts ["-m" "credits.engi.relay-main"]}
-  :test {:extra-paths ["test"]
+  ;; dev/ holds the one-off corpus generator; it is not on the library path.
+  ;; `clojure -M:dev -m credits.dev.generate-example-journal`
+  :dev {:extra-paths ["dev"]}
+
+  :test {:extra-paths ["test" "dev"]
          :extra-deps {io.github.cognitect-labs/test-runner
                       {:git/tag "v0.5.1" :git/sha "dfb30dd"}}
          :main-opts ["-m" "cognitect.test-runner"]}

@@ -1,0 +1,127 @@
+;; Generate resources/engi/example-journal.edn and its Valueflows projection.
+;;
+;;   clojure -M:dev -m credits.dev.generate-example-journal
+;;
+;; RUN ONCE, THEN COMMIT. This is not a build step: `crypto/generate-keypair`
+;; is random, so re-running produces different keys and different signatures.
+;; What is regenerable — and what credits.engi-valueflows-test regenerates on
+;; every run — is the PROJECTION of the committed corpus. That is the ratchet:
+;; if the mapping drifts, the committed projection stops matching and the suite
+;; fails.
+;;
+;; The corpus is SYNTHETIC. It is a small society built by driving the real
+;; kernel, so every event is one the kernel actually accepted under real
+;; Ed25519 verification and a real replay — which is what makes it worth
+;; committing. It is not a record of anyone's economic activity, and the file
+;; says so in its own header.
+
+(ns credits.dev.generate-example-journal
+  (:require [clojure.pprint :as pprint]
+            [credits.engi.codec :as codec]
+            [credits.engi.crypto :as crypto]
+            [credits.engi.replay :as replay]
+            [credits.engi.valueflows :as vf]))
+
+(def dids
+  ["did:alice" "did:bob" "did:carol" "did:carer"
+   "did:local-1" "did:local-2" "did:survey" "did:river"])
+
+(defn build []
+  (let [keys-by-did (zipmap dids (repeatedly crypto/generate-keypair))
+        pub #(get-in keys-by-did [% :public-key])
+        sign (fn [event evidence]
+               (crypto/sign-evidence
+                event evidence (get-in keys-by-did [(:signer evidence) :private-key])))
+        signed (fn [body evidence-key evidence]
+                 (let [event (codec/with-event-id (assoc body evidence-key evidence))]
+                   (assoc event evidence-key (mapv #(sign event %) evidence))))
+
+        ;; alice is endorsed, so she may go negative -- the point of mutual credit
+        line-alice (signed {:type :credit-line :subject "did:alice"}
+                           :endorsements
+                           [{:signer "did:bob" :guarantor "did:bob"
+                             :subject "did:alice" :limit 100}
+                            {:signer "did:carol" :guarantor "did:carol"
+                             :subject "did:alice" :limit 80}])
+        line-bob (signed {:type :credit-line :subject "did:bob"}
+                         :endorsements
+                         [{:signer "did:alice" :guarantor "did:alice"
+                           :subject "did:bob" :limit 90}
+                          {:signer "did:carol" :guarantor "did:carol"
+                           :subject "did:bob" :limit 70}])
+
+        line-carol (signed {:type :credit-line :subject "did:carol"}
+                           :endorsements
+                           [{:signer "did:alice" :guarantor "did:alice"
+                             :subject "did:carol" :limit 60}
+                            {:signer "did:bob" :guarantor "did:bob"
+                             :subject "did:carol" :limit 50}])
+
+        ;; alice pays bob, going negative against her endorsements
+        t1 (signed {:type :transfer :from "did:alice" :to "did:bob"
+                    :amount 60 :nonce 1 :parents [(:id line-alice)]}
+                   :signatures [{:signer "did:alice"} {:signer "did:bob"}])
+        ;; bob pays carol onward
+        t2 (signed {:type :transfer :from "did:bob" :to "did:carol"
+                    :amount 25 :nonce 1 :parents [(:id line-bob) (:id t1)]}
+                   :signatures [{:signer "did:bob"} {:signer "did:carol"}])
+        ;; care work recognised by a heterogeneous quorum -- the only thing that
+        ;; may raise aggregate supply
+        commons (signed {:type :commons-issuance :recipient "did:carer"
+                         :amount 30 :epoch "2026-08" :epoch-cap 100}
+                        :attestations
+                        [{:signer "did:local-1" :role :local-community}
+                         {:signer "did:local-2" :role :local-community}
+                         {:signer "did:survey" :role :independent-witness}
+                         {:signer "did:river" :role :commons-guardian}])
+        ;; and alice repays in the opposite direction
+        t3 (signed {:type :transfer :from "did:carol" :to "did:alice"
+                    :amount 25 :nonce 1 :parents [(:id line-carol) (:id t2)]}
+                   :signatures [{:signer "did:carol"} {:signer "did:alice"}])
+
+        events [line-alice line-bob line-carol t1 t2 commons t3]
+        result (replay/replay events pub)]
+    (when-not (:ok? result)
+      (throw (ex-info "the kernel rejected the generated society; corpus not written"
+                      {:error (:error result) :index (:index result)})))
+    {:events events
+     :public-keys (into (sorted-map) (map (fn [d] [d (pub d)])) dids)
+     :state-root (:state-root result)
+     :balances (into (sorted-map) (:balances (:state result)))}))
+
+(defn -main [& _]
+  (let [{:keys [events public-keys state-root balances]} (build)
+        projected (vf/->datoms events)
+        header (str ";; SYNTHETIC CORPUS -- generated once by\n"
+                    ";; dev/credits/dev/generate_example_journal.clj and committed. Every event here was\n"
+                    ";; accepted by the real kernel under real Ed25519 verification and a full\n"
+                    ";; replay, which is what makes it worth committing.\n"
+                    ";;\n"
+                    ";; IT IS NOT A RECORD OF ANYONE'S ECONOMIC ACTIVITY. Do not cite balances\n"
+                    ";; or amounts here as measurements of anything.\n"
+                    ";;\n"
+                    ";; Regenerating produces different keys and signatures (keypairs are\n"
+                    ";; random), so this file is a fixture, not a build output. What IS\n"
+                    ";; regenerated on every test run is example-journal.valueflows.edn.\n")]
+    (.mkdirs (java.io.File. "resources/engi"))
+    (spit "resources/engi/example-journal.edn"
+          (str header
+               (with-out-str
+                 (pprint/pprint {:corpus/synthetic? true
+                                 :corpus/generated-by "dev/credits/dev/generate_example_journal.clj"
+                                 :corpus/state-root state-root
+                                 :corpus/balances balances
+                                 :corpus/public-keys public-keys
+                                 :corpus/events events}))))
+    (spit "resources/engi/example-journal.valueflows.edn"
+          (str ";; GENERATED from example-journal.edn by credits.engi.valueflows.\n"
+               ";; DO NOT EDIT BY HAND. Regenerate:\n"
+               ";;   clojure -M:dev -m credits.dev.generate-example-journal\n"
+               ";; credits.engi-valueflows-test re-projects the corpus on every run and\n"
+               ";; compares, so a drift in the mapping fails the suite.\n"
+               (with-out-str (pprint/pprint (:tx-data projected)))))
+    (println "wrote resources/engi/example-journal.edn"
+             (count events) "events, state-root" state-root)
+    (println "wrote resources/engi/example-journal.valueflows.edn"
+             (count (:tx-data projected)) "entities")
+    (println "balances" balances)))
