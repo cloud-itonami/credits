@@ -1,5 +1,12 @@
 {:paths ["src" "."]
- :deps {org.clojure/data.json {:mvn/version "2.5.1"}}
+ ;; ws-valueflo-vocabulary supplies the Valueflows action behaviour table and the
+ ;; unit registry, used ONLY by credits.engi.valueflows -- a read-only
+ ;; projection. The kernel (credits.methods.engi) does not depend on it and its
+ ;; constitutional boundary is untouched: projection is not admission.
+ :deps {org.clojure/data.json {:mvn/version "2.5.1"}
+        io.github.kotoba-lang/ws-valueflo-vocabulary
+        {:git/url "https://github.com/kotoba-lang/ws-valueflo-vocabulary.git"
+         :git/sha "95e552dcacfb54f89b539f5a394bdfe83c0a0df6"}}
  :aliases
  {:relay {:main-opts ["-m" "credits.engi.relay-main"]}
   :test {:extra-paths ["test"]

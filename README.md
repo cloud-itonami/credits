@@ -21,6 +21,41 @@ Kisha rights.
   evidence of a state, never authority to rewrite it.
 - EN balance never determines protocol votes.
 
+## Valueflows projection (read-only)
+
+`credits.engi.valueflows` projects accepted events onto the workspace's shared
+economic vocabulary ([Valueflows](https://www.valueflo.ws/), ADR-2608153000), so
+a signed EN transfer can be queried alongside a production order or an hour of
+work instead of living on its own island.
+
+| ENGI | vf action | why |
+|---|---|---|
+| transfer | `transfer` | accounting and onhand both decrement/increment — exactly zero net supply |
+| Commons issuance | `raise` | increments one balance with no counterparty |
+| credit line | *none* | a standing willingness to hold a negative balance is not a flow |
+
+**Projection is not admission.** Nothing there verifies a signature, a nonce, a
+credit limit or an epoch cap — those are the kernel's, and its constitutional
+boundary is untouched. The projection only reads events the kernel already
+accepted, and writes nothing. A test pins this: an unsigned transfer still
+projects, with no signers recorded, so the absence is visible rather than
+filled in.
+
+Amounts stay **integer micro-EN**. Dividing by a million to present EN would
+turn an exact integer into a fraction, and integer exactness is what the
+zero-net-supply invariant rests on. `:micro-en` is registered as
+`:quantity-kind :mutual-credit`, not `:currency`, so nothing adds it to yen.
+
+`net-supply` carries the constitutional invariant across the join: it replays
+the *projected* events through `valueflows.event` and checks that transfers left
+the total unchanged and only Commons issuance raised it. If a projection ever
+broke that, the vocabulary layer would be telling a different story about the
+same ledger than the kernel does.
+
+```bash
+clojure -M:test -n credits.engi-valueflows-test
+```
+
 ## Runnable social kernel
 
 [`src/credits/methods/engi.cljc`](src/credits/methods/engi.cljc) is a portable pure state machine. It
