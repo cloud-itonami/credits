@@ -1,5 +1,5 @@
 (ns credits.engi-at-client-test
-  (:require [clojure.data.json :as json]
+  (:require [json.compat :as json]
             [clojure.test :refer [deftest is testing]]
             [credits.engi.at-client :as client]
             [credits.engi.atproto :as atproto]
@@ -12,7 +12,7 @@
   (codec/with-event-id {:type :pds-roundtrip :parents [] :value 7}))
 
 (defn response! [exchange status body]
-  (let [bytes (.getBytes (json/write-str body) StandardCharsets/UTF_8)]
+  (let [bytes (.getBytes (json/generate-string body) StandardCharsets/UTF_8)]
     (.set (.getResponseHeaders exchange) "Content-Type" "application/json")
     (.sendResponseHeaders exchange status (alength bytes))
     (with-open [out (.getResponseBody exchange)]
@@ -33,9 +33,9 @@
          (try
            (if-not (authorized? exchange)
              (response! exchange 401 {:error "AuthRequired"})
-             (let [body (json/read-str
+             (let [body (json/parse-string
                          (slurp (.getRequestBody exchange))
-                         :key-fn keyword)]
+                         true)]
                (swap! records conj
                       {:uri (str "at://" (:repo body) "/"
                                  (:collection body) "/" (:rkey body))
@@ -65,9 +65,9 @@
          (try
            (if-not (authorized? exchange)
              (response! exchange 401 {:error "AuthRequired"})
-             (let [body (json/read-str
+             (let [body (json/parse-string
                          (slurp (.getRequestBody exchange))
-                         :key-fn keyword)
+                         true)
                    current (first @records)]
                (if (not= (:swapRecord body) (:cid current))
                  (response! exchange 409 {:error "InvalidSwap"})
@@ -127,7 +127,7 @@
         ((:stop! pds))))))
 
 (deftest lexicon-identifies-the-canonical-record
-  (let [lexicon (json/read-str
+  (let [lexicon (json/parse-string
                  (slurp "lexicons/com/etzhayyim/engi/event.json"))]
     (is (= atproto/collection (get lexicon "id")))
     (is (= "record" (get-in lexicon ["defs" "main" "type"])))))

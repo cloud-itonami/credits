@@ -3,7 +3,7 @@
 
   Registration supplies credential id and SPKI public key. No online identity
   provider or etzhayyim service participates in assertion verification."
-  (:require [clojure.data.json :as json]
+  (:require [json.compat :as json]
             [credits.engi.codec :as codec])
   (:import (java.nio.charset StandardCharsets)
            (java.security KeyFactory MessageDigest Signature)
@@ -27,7 +27,7 @@
   [{:keys [credential-id public-key-spki origin rp-id]} payload assertion]
   (try
     (let [client-bytes (codec/base64url-decode (:client-data-json assertion))
-          client (json/read-str
+          client (json/parse-string
                   (String. client-bytes StandardCharsets/UTF_8))
           authenticator (codec/base64url-decode
                          (:authenticator-data assertion))

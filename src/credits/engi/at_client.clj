@@ -3,7 +3,7 @@
 
   Tokens are supplied by the participant and are never persisted here. PDS
   responses remain untrusted until `atproto/record->event` succeeds."
-  (:require [clojure.data.json :as json]
+  (:require [json.compat :as json]
             [clojure.string :as str]
             [credits.engi.atproto :as atproto]
             [credits.engi.codec :as codec])
@@ -51,14 +51,14 @@
                       (.header "Content-Type" "application/json")
                       (.method method
                                (HttpRequest$BodyPublishers/ofString
-                                (json/write-str body))))
+                                (json/generate-string body))))
                   (.method builder method
                            (HttpRequest$BodyPublishers/noBody)))
         response (.send (HttpClient/newHttpClient)
                         (.build builder)
                         (HttpResponse$BodyHandlers/ofString))
         parsed (try
-                 (json/read-str (.body response) :key-fn keyword)
+                 (json/parse-string (.body response) true)
                  (catch Exception _ {:raw-body (.body response)}))]
       {:ok? (<= 200 (.statusCode response) 299)
        :status (.statusCode response)
