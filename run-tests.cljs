@@ -1,0 +1,39 @@
+(ns run-tests
+  "Run the portable part of this suite under nbb (ClojureScript on Node via
+  SCI), so credits.murakumo is checked by a second runtime.
+
+  Coverage is deliberately partial, and the gap is structural rather than
+  accidental. This repo has twelve test namespaces; eleven are .clj and are
+  JVM-only by construction -- the engi kernel, its adapters and the WebAuthn
+  and Valueflows surfaces are Clojure, not portable source, so there is
+  nothing for a ClojureScript runtime to run there. The twelfth,
+  credits.murakumo-test, is .cljc over src/credits/murakumo.cljc, the one
+  module in this repo written to be portable. Until now nothing ran it as
+  anything but Clojure, so the portability was an assertion rather than an
+  observation.
+
+  Measured 2026-08-20, the two runtimes agree exactly on that namespace:
+
+    clojure -M:test -e '(run-tests credits.murakumo-test)'
+                              Ran 9 tests containing 174 assertions, 0 failures
+    nbb run-tests.cljs            9 tests containing 174 assertions, 0 failures
+
+  For scale: the whole JVM suite is 70 tests and 432 assertions, so this one
+  portable namespace is 9 of the tests but 174 of the assertions.
+
+  The namespace is listed explicitly. clojure -M:test discovers namespaces by
+  scanning test/, a cljs runner cannot, and a namespace left off this list
+  would silently never run rather than fail.
+
+    nbb --classpath src:test run-tests.cljs"
+  (:require [cljs.test :as t]
+            [credits.murakumo-test]))
+
+(defmethod t/report [:cljs.test/default :end-run-tests] [m]
+  (println (str "\nnbb: " (:test m) " tests, " (:pass m) " passed, "
+                (:fail m) " failed, " (:error m) " errors"))
+  ;; Without this a failing suite exits 0 and the gate is green forever.
+  (when (pos? (+ (or (:fail m) 0) (or (:error m) 0)))
+    (set! (.-exitCode js/process) 1)))
+
+(t/run-tests 'credits.murakumo-test)
