@@ -24,7 +24,7 @@
 (load-file "test/credits/engi_r6_test.clj")
 (when-not (System/getProperty "babashka.version")
   ;; The production transport uses the JDK HttpServer/HttpClient modules,
-  ;; and the WebAuthn verifier uses data.json. JVM tests exercise both.
+  ;; and the WebAuthn verifier uses json.compat. JVM tests exercise both.
   (load-file "src/credits/engi/transport.clj")
   (load-file "src/credits/engi/relay_main.clj")
   (load-file "src/credits/engi/sync.clj")

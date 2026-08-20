@@ -1,5 +1,5 @@
 (ns credits.engi-webauthn-test
-  (:require [clojure.data.json :as json]
+  (:require [json.compat :as json]
             [clojure.java.shell :as shell]
             [clojure.test :refer [deftest is]]
             [credits.engi.codec :as codec]
@@ -20,7 +20,7 @@
         payload (codec/evidence-payload event statement)
         generated (shell/sh "node" "clients/engi-webauthn.mjs" "fixture"
                             (codec/base64url payload))
-        fixture (json/read-str (:out generated))
+        fixture (json/parse-string (:out generated))
         assertion (keywordize-assertion (get fixture "assertion"))
         credential {:credential-id (get fixture "credentialId")
                     :public-key-spki (get fixture "publicKeySpki")
