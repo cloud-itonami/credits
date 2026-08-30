@@ -1,12 +1,14 @@
 # ENGI / EN to FEVM ERC-20 bridge
 
-Status: executable prototype; not deployed; not production-authorized.
+Status: executable threshold-attestation prototype; Calibration synthetic round trip verified; not production-authorized.
 
 ## Decision
 
 ENGI remains the canonical signed bilateral mutual-credit ledger. It permits bounded negative balances and preserves zero net mutual-credit supply, except separately disclosed Commons issuance. Those semantics cannot be represented faithfully by ERC-20's unsigned non-negative balances.
 
 `WrappedEN` (`wEN`) therefore represents only positive EN transferred into a dedicated bridge DID. It is not EN, cannot create EN and cannot import a negative EN balance.
+
+The dependency direction and Holochain-inspired agent-centric replication model are specified in `docs/260830-chain-independent-settlement.md`. FEVM/EVM is an optional settlement projection and is never required for ENGI admission or replay.
 
 ## Conservation boundary
 
@@ -18,13 +20,13 @@ An ENGI deposit event is accepted once. Its event id becomes `depositId`; the re
 
 Withdrawal burns wEN first and creates a deterministic request. The bridge later attaches the canonical bilateral ENGI transfer event that releases EN from the bridge DID. Burning does not itself prove EN settlement; `WithdrawalFinalized` records that second boundary explicitly.
 
-## Roles
+## Authorities
 
-- `admin`: pause/unpause and two-step role rotation; cannot mint.
-- `bridge`: bind one canonical ENGI deposit to one mint and finalize withdrawal evidence.
-- `reserveOracle`: publish independently replayed checkpoint roots and locked bridge balance.
+- `admin`: pause/unpause and two-step admin rotation; cannot mint.
+- `bridge committee` (2-of-3 on Calibration): bind one canonical ENGI deposit to one mint and finalize withdrawal evidence.
+- `reserve committee` (2-of-3 on Calibration): publish independently replayed checkpoint roots and locked bridge balance.
 
-The prototype uses single addresses for the bridge and reserve reporter so behavior can be exercised locally. Production requires independent threshold signers, hardware-backed keys, delayed role changes, incident recovery and continuous supply/reserve reconciliation. Bridge and reserve authority must not be the same signer set.
+The bridge and reserve committees are disjoint and immutable for this deployment. Attestations use an EIP-712 domain bound to the chain id and contract address, include an expiry, and require recovered signer addresses in strictly increasing order. A duplicate, unsorted, non-member, high-`s`, malformed or expired signature is rejected. Committee replacement deliberately requires a reviewed migration to a new contract; production additionally requires hardware-backed keys, signer organizations in separate failure domains, delayed migration, incident recovery and continuous supply/reserve reconciliation.
 
 ## Cloud Itonami liquidity integration
 
@@ -70,36 +72,46 @@ The gate builds the contract, executes lifecycle and adversarial tests, confirms
 
 ## Calibration deployment shape
 
-No private key is stored in this repository. After independent review and funding a test-only address with tFIL:
+After independent review and funding the test-only address with tFIL, use the public committee configuration in `deployments/filecoin-calibration.json`. No private key is stored in this repository. The deployment script reads test-only keys from macOS Keychain:
 
 ```bash
-forge create contracts/WrappedEN.sol:WrappedEN \
-  --rpc-url https://api.calibration.node.glif.io/rpc/v1 \
-  --chain-id 314159 \
-  --private-key "$WEN_CALIBRATION_DEPLOYER_KEY" \
-  --constructor-args "$ADMIN" "$BRIDGE" "$RESERVE_ORACLE" \
-  --broadcast
+./scripts/wen-calibration.sh deploy
+./scripts/wen-calibration.sh roundtrip
 ```
 
-Deployment is not bridge activation. Minting must remain paused operationally until the ENGI bridge DID, independent replay service, checkpoint policy, signer separation, monitoring, legal classification and unwind procedure exist.
+The round trip uses the repository's cryptographically replayed synthetic ENGI corpus root and a test-only positive balance solely to prove checkpoint attestation, mint, burn and settlement-finalization plumbing. It is not evidence of production EN escrow or anyone's economic activity.
+
+Deployment is not bridge activation. Mainnet minting must remain disabled until the real ENGI bridge DID, independent replay services, checkpoint/finality policy, organizational signer separation, monitoring, legal classification, migration and unwind procedures exist.
+
+### Verified Calibration result
+
+- Contract: `0xbf9e553d406f4ea85fb80cf3636b9c97b5403030`
+- Deployment transaction: `0x465d6a1ddd9bb06d8762e6db8f51d3f6dff781b18a2b3af68bbb314c1b2a4356`
+- Deployment block: `4024112`
+- Committees: disjoint 2-of-3 bridge and 2-of-3 reserve
+- Replayed checkpoint reserve: 35 micro-EN; test mint/burn: 10 micro-EN
+- Finalization block: `4024121`
+- Readback: `totalSupply = 0`, deployer wEN balance `= 0`, `solvent = true`
+
+All five receipts (deployment, reserve, mint, withdrawal and finalize) returned success. Exact transaction ids and the synthetic-evidence limitation are recorded in `deployments/filecoin-calibration.json`.
 
 ## Compatibility result
 
 | Layer | Result | Boundary |
 |---|---|---|
 | ERC-20 wallets/DEX ABI | compatible | standard methods/events and 6 decimals |
-| FEVM bytecode | compatible by local build/opcode gate | live Calibration deploy still required |
-| ENGI positive escrow | structurally compatible | reserve oracle is trusted in prototype |
+| FEVM bytecode | compatible and deployed on Calibration | production review and mainnet deployment still required |
+| ENGI positive escrow | structurally compatible | Calibration round trip uses synthetic replay evidence, not production escrow |
 | ENGI negative balances | intentionally incompatible | cannot be represented by ERC-20 |
-| ENGI Ed25519 proof | not verified on-chain | bridge currently submits opaque event/checkpoint ids |
+| ENGI Ed25519 proof | replayed off-chain, not verified on-chain | two independent ECDSA threshold committees attest scoped evidence |
 | Uniswap-style AMM | ABI-compatible | pool deployment, price/risk and legal gates are separate |
 | Filecoin storage proofs | adapter-ready | no storage-deal verification in token core |
 
 ## Before real value
 
 1. Specify bridge-DID signing policy and prevent any non-burn-backed withdrawal.
-2. Replace single bridge/oracle roles with independent threshold attestations and timelocks.
-3. Verify ENGI Ed25519-to-FEVM evidence or publish a formally scoped ECDSA committee attestation.
+2. Place committee keys in separate organizations and hardware-backed signers; specify migration timelocks.
+3. Formally specify and audit the ENGI Ed25519 replay-to-ECDSA threshold attestation boundary.
 4. Add continuous `totalSupply <= locked EN` monitoring with automatic pause and public receipts.
 5. Audit Solidity, replay/finality assumptions, role recovery and frontend approval handling.
 6. Obtain jurisdiction-specific treatment for transferable wEN and any LP/revenue rights.

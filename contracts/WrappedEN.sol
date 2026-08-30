@@ -4,12 +4,30 @@ pragma solidity ^0.8.24;
 import { IERC20 } from "./IERC20.sol";
 
 /// @title Wrapped EN (wEN)
-/// @notice FEVM/EVM ERC-20 representation of positive EN locked in the canonical ENGI ledger.
-/// @dev This contract is a bridge representation, not the ENGI ledger and not an EN minter.
+/// @notice FEVM/EVM representation of positive EN locked in the canonical ENGI ledger.
+/// @dev ENGI remains authoritative. Mint/reserve/settlement evidence requires independent
+///      threshold committees; submitting a proof is permissionless.
 contract WrappedEN is IERC20 {
     string public constant name = "Wrapped EN";
     string public constant symbol = "wEN";
-    uint8 public constant decimals = 6; // ENGI amounts are integer micro-EN.
+    uint8 public constant decimals = 6;
+
+    bytes32 public constant RESERVE_TYPEHASH = keccak256(
+        "ReserveAttestation(bytes32 checkpointRoot,uint64 checkpointSequence,uint256 lockedMicroEn,uint64 validUntil)"
+    );
+    bytes32 public constant DEPOSIT_TYPEHASH = keccak256(
+        "DepositAttestation(bytes32 depositId,bytes32 checkpointRoot,address recipient,uint256 amount,uint64 validUntil)"
+    );
+    bytes32 public constant WITHDRAWAL_TYPEHASH = keccak256(
+        "WithdrawalAttestation(bytes32 withdrawalId,bytes32 engiEventId,uint64 validUntil)"
+    );
+    bytes32 private constant DOMAIN_TYPEHASH = keccak256(
+        "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"
+    );
+    bytes32 private constant DOMAIN_NAME_HASH = keccak256("Wrapped EN Bridge");
+    bytes32 private constant DOMAIN_VERSION_HASH = keccak256("2");
+    uint256 private constant SECP256K1_N_DIV_2 =
+        0x7fffffffffffffffffffffffffffffff5d576e7357a4501ddfe92f46681b20a0;
 
     error Unauthorized();
     error ZeroAddress();
@@ -23,9 +41,15 @@ contract WrappedEN is IERC20 {
     error UnknownWithdrawal();
     error WithdrawalAlreadyFinalized();
     error InvalidEvidence();
+    error EvidenceExpired();
     error ReserveExceeded();
     error RoleTransferNotPending();
     error StaleCheckpoint();
+    error InvalidCommittee();
+    error InvalidThreshold();
+    error InvalidSignature();
+    error DuplicateOrUnsortedSigner();
+    error InsufficientCommitteeSignatures();
 
     event EngiDepositMinted(
         bytes32 indexed depositId,
@@ -50,12 +74,6 @@ contract WrappedEN is IERC20 {
     event PausedStateChanged(bool paused);
     event AdminTransferStarted(address indexed currentAdmin, address indexed pendingAdmin);
     event AdminTransferred(address indexed previousAdmin, address indexed newAdmin);
-    event BridgeTransferStarted(address indexed currentBridge, address indexed pendingBridge);
-    event BridgeTransferred(address indexed previousBridge, address indexed newBridge);
-    event ReserveOracleTransferStarted(
-        address indexed currentOracle, address indexed pendingOracle
-    );
-    event ReserveOracleTransferred(address indexed previousOracle, address indexed newOracle);
 
     struct Withdrawal {
         address sender;
@@ -73,10 +91,10 @@ contract WrappedEN is IERC20 {
 
     address public admin;
     address public pendingAdmin;
-    address public bridge;
-    address public pendingBridge;
-    address public reserveOracle;
-    address public pendingReserveOracle;
+    uint8 public immutable bridgeThreshold;
+    uint8 public immutable reserveThreshold;
+    mapping(address => bool) public bridgeSigner;
+    mapping(address => bool) public reserveSigner;
 
     mapping(address => uint256) private _balances;
     mapping(address => mapping(address => uint256)) private _allowances;
@@ -89,23 +107,32 @@ contract WrappedEN is IERC20 {
         _;
     }
 
-    modifier onlyBridge() {
-        if (msg.sender != bridge) revert Unauthorized();
-        _;
-    }
-
-    modifier onlyReserveOracle() {
-        if (msg.sender != reserveOracle) revert Unauthorized();
-        _;
-    }
-
-    constructor(address admin_, address bridge_, address reserveOracle_) {
-        if (admin_ == address(0) || bridge_ == address(0) || reserveOracle_ == address(0)) {
-            revert ZeroAddress();
-        }
+    constructor(
+        address admin_,
+        address[] memory bridgeSigners_,
+        uint8 bridgeThreshold_,
+        address[] memory reserveSigners_,
+        uint8 reserveThreshold_
+    ) {
+        if (admin_ == address(0)) revert ZeroAddress();
+        _validateThreshold(bridgeSigners_.length, bridgeThreshold_);
+        _validateThreshold(reserveSigners_.length, reserveThreshold_);
         admin = admin_;
-        bridge = bridge_;
-        reserveOracle = reserveOracle_;
+        bridgeThreshold = bridgeThreshold_;
+        reserveThreshold = reserveThreshold_;
+
+        for (uint256 i; i < bridgeSigners_.length; ++i) {
+            address signer = bridgeSigners_[i];
+            if (signer == address(0) || bridgeSigner[signer]) revert InvalidCommittee();
+            bridgeSigner[signer] = true;
+        }
+        for (uint256 i; i < reserveSigners_.length; ++i) {
+            address signer = reserveSigners_[i];
+            if (signer == address(0) || reserveSigner[signer] || bridgeSigner[signer]) {
+                revert InvalidCommittee();
+            }
+            reserveSigner[signer] = true;
+        }
     }
 
     function balanceOf(address account) external view override returns (uint256) {
@@ -145,32 +172,38 @@ contract WrappedEN is IERC20 {
         return true;
     }
 
-    /// @notice Report EN locked at the bridge DID from an independently replayed checkpoint.
-    /// @dev A deficit pauses transfers but withdrawals remain possible, reducing supply.
-    function reportReserve(bytes32 checkpointRoot, uint64 checkpointSequence, uint256 lockedMicroEn)
-        external
-        onlyReserveOracle
-    {
+    function reportReserve(
+        bytes32 checkpointRoot,
+        uint64 checkpointSequence,
+        uint256 lockedMicroEn,
+        uint64 validUntil,
+        bytes[] calldata signatures
+    ) external {
         if (checkpointRoot == bytes32(0)) revert InvalidEvidence();
         if (checkpointSequence <= latestCheckpointSequence) revert StaleCheckpoint();
+        bytes32 digest =
+            reserveDigest(checkpointRoot, checkpointSequence, lockedMicroEn, validUntil);
+        _verifyCommittee(digest, signatures, false, validUntil);
+
         latestCheckpointRoot = checkpointRoot;
         latestCheckpointSequence = checkpointSequence;
         reportedLockedMicroEn = lockedMicroEn;
         bool reserveSolvent = lockedMicroEn >= totalSupply;
-        if (!reserveSolvent) {
+        if (!reserveSolvent && !paused) {
             paused = true;
             emit PausedStateChanged(true);
         }
         emit ReserveReported(checkpointRoot, checkpointSequence, lockedMicroEn, reserveSolvent);
     }
 
-    /// @notice Mint wEN once for a canonical ENGI deposit into the bridge DID.
     function mintFromEngi(
         bytes32 depositId,
         bytes32 checkpointRoot,
         address recipient,
-        uint256 amount
-    ) external onlyBridge {
+        uint256 amount,
+        uint64 validUntil,
+        bytes[] calldata signatures
+    ) external {
         if (paused) revert Paused();
         if (recipient == address(0)) revert ZeroAddress();
         if (amount == 0) revert ZeroAmount();
@@ -178,6 +211,12 @@ contract WrappedEN is IERC20 {
         if (processedDeposits[depositId]) revert DepositAlreadyProcessed();
         if (checkpointRoot != latestCheckpointRoot) revert InvalidEvidence();
         if (totalSupply + amount > reportedLockedMicroEn) revert ReserveExceeded();
+        _verifyCommittee(
+            depositDigest(depositId, checkpointRoot, recipient, amount, validUntil),
+            signatures,
+            true,
+            validUntil
+        );
 
         processedDeposits[depositId] = true;
         totalSupply += amount;
@@ -186,7 +225,6 @@ contract WrappedEN is IERC20 {
         emit EngiDepositMinted(depositId, checkpointRoot, recipient, amount);
     }
 
-    /// @notice Burn wEN and create a request for an ENGI transfer from the bridge DID.
     function requestWithdrawal(uint256 amount, bytes32 engiRecipientHash)
         external
         returns (bytes32 withdrawalId)
@@ -208,16 +246,72 @@ contract WrappedEN is IERC20 {
         emit WithdrawalRequested(withdrawalId, msg.sender, engiRecipientHash, amount, nonce);
     }
 
-    /// @notice Attach the canonical ENGI transfer event that settled a burn request.
-    function finalizeWithdrawal(bytes32 withdrawalId, bytes32 engiEventId) external onlyBridge {
+    function finalizeWithdrawal(
+        bytes32 withdrawalId,
+        bytes32 engiEventId,
+        uint64 validUntil,
+        bytes[] calldata signatures
+    ) external {
         Withdrawal storage withdrawal = withdrawals[withdrawalId];
         if (withdrawal.sender == address(0)) revert UnknownWithdrawal();
         if (withdrawal.finalized) revert WithdrawalAlreadyFinalized();
         if (engiEventId == bytes32(0)) revert InvalidEvidence();
         if (processedWithdrawalEvents[engiEventId]) revert EngiEventAlreadyProcessed();
+        _verifyCommittee(
+            withdrawalDigest(withdrawalId, engiEventId, validUntil), signatures, true, validUntil
+        );
         processedWithdrawalEvents[engiEventId] = true;
         withdrawal.finalized = true;
         emit WithdrawalFinalized(withdrawalId, engiEventId);
+    }
+
+    function reserveDigest(
+        bytes32 checkpointRoot,
+        uint64 checkpointSequence,
+        uint256 lockedMicroEn,
+        uint64 validUntil
+    ) public view returns (bytes32) {
+        return _typedDataHash(
+            keccak256(
+                abi.encode(
+                    RESERVE_TYPEHASH, checkpointRoot, checkpointSequence, lockedMicroEn, validUntil
+                )
+            )
+        );
+    }
+
+    function depositDigest(
+        bytes32 depositId,
+        bytes32 checkpointRoot,
+        address recipient,
+        uint256 amount,
+        uint64 validUntil
+    ) public view returns (bytes32) {
+        return _typedDataHash(
+            keccak256(
+                abi.encode(
+                    DEPOSIT_TYPEHASH, depositId, checkpointRoot, recipient, amount, validUntil
+                )
+            )
+        );
+    }
+
+    function withdrawalDigest(bytes32 withdrawalId, bytes32 engiEventId, uint64 validUntil)
+        public
+        view
+        returns (bytes32)
+    {
+        return _typedDataHash(
+            keccak256(abi.encode(WITHDRAWAL_TYPEHASH, withdrawalId, engiEventId, validUntil))
+        );
+    }
+
+    function domainSeparator() public view returns (bytes32) {
+        return keccak256(
+            abi.encode(
+                DOMAIN_TYPEHASH, DOMAIN_NAME_HASH, DOMAIN_VERSION_HASH, block.chainid, address(this)
+            )
+        );
     }
 
     function pause() external onlyAdmin {
@@ -247,36 +341,59 @@ contract WrappedEN is IERC20 {
         emit AdminTransferred(previous, msg.sender);
     }
 
-    function startBridgeTransfer(address next) external onlyAdmin {
-        if (next == address(0)) revert ZeroAddress();
-        pendingBridge = next;
-        emit BridgeTransferStarted(bridge, next);
-    }
-
-    function acceptBridge() external {
-        if (msg.sender != pendingBridge) revert RoleTransferNotPending();
-        address previous = bridge;
-        bridge = msg.sender;
-        pendingBridge = address(0);
-        emit BridgeTransferred(previous, msg.sender);
-    }
-
-    function startReserveOracleTransfer(address next) external onlyAdmin {
-        if (next == address(0)) revert ZeroAddress();
-        pendingReserveOracle = next;
-        emit ReserveOracleTransferStarted(reserveOracle, next);
-    }
-
-    function acceptReserveOracle() external {
-        if (msg.sender != pendingReserveOracle) revert RoleTransferNotPending();
-        address previous = reserveOracle;
-        reserveOracle = msg.sender;
-        pendingReserveOracle = address(0);
-        emit ReserveOracleTransferred(previous, msg.sender);
-    }
-
     function solvent() external view returns (bool) {
         return totalSupply <= reportedLockedMicroEn;
+    }
+
+    function _verifyCommittee(
+        bytes32 digest,
+        bytes[] calldata signatures,
+        bool useBridgeCommittee,
+        uint64 validUntil
+    ) private view {
+        if (validUntil < block.timestamp) revert EvidenceExpired();
+        uint256 threshold = useBridgeCommittee ? bridgeThreshold : reserveThreshold;
+        if (signatures.length < threshold) revert InsufficientCommitteeSignatures();
+
+        address previous;
+        uint256 valid;
+        for (uint256 i; i < signatures.length; ++i) {
+            address signer = _recover(digest, signatures[i]);
+            if (signer <= previous) revert DuplicateOrUnsortedSigner();
+            previous = signer;
+            bool admitted = useBridgeCommittee ? bridgeSigner[signer] : reserveSigner[signer];
+            if (!admitted) revert InvalidSignature();
+            ++valid;
+        }
+        if (valid < threshold) revert InsufficientCommitteeSignatures();
+    }
+
+    function _recover(bytes32 digest, bytes calldata signature)
+        private
+        pure
+        returns (address signer)
+    {
+        if (signature.length != 65) revert InvalidSignature();
+        bytes32 r;
+        bytes32 s;
+        uint8 v;
+        assembly ("memory-safe") {
+            r := calldataload(signature.offset)
+            s := calldataload(add(signature.offset, 32))
+            v := byte(0, calldataload(add(signature.offset, 64)))
+        }
+        if (uint256(s) > SECP256K1_N_DIV_2 || (v != 27 && v != 28)) revert InvalidSignature();
+        signer = ecrecover(digest, v, r, s);
+        if (signer == address(0)) revert InvalidSignature();
+    }
+
+    function _typedDataHash(bytes32 structHash) private view returns (bytes32) {
+        return keccak256(abi.encodePacked("\x19\x01", domainSeparator(), structHash));
+    }
+
+    function _validateThreshold(uint256 size, uint8 threshold) private pure {
+        if (size == 0 || size > type(uint8).max) revert InvalidCommittee();
+        if (threshold == 0 || threshold > size) revert InvalidThreshold();
     }
 
     function _transfer(address from, address to, uint256 value) private {

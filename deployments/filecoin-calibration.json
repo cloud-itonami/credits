@@ -1,0 +1,43 @@
+{
+  "network": "Filecoin Calibration",
+  "chainId": 314159,
+  "rpcUrl": "https://api.calibration.node.glif.io/rpc/v1",
+  "status": "synthetic-roundtrip-verified",
+  "admin": "0x7B2979D2a4aF5127Ba3d851Da39920712818De33",
+  "deployer": "0x7B2979D2a4aF5127Ba3d851Da39920712818De33",
+  "bridgeCommittee": {
+    "threshold": 2,
+    "signers": [
+      "0xcd1544ca6Ba36800910c10453989B038F6f933DE",
+      "0xf9414bA873Bc87623381Fa739A376507B3D65111",
+      "0x5A9499AD46Faa7dBB0a918AE76b63beF8F168f06"
+    ]
+  },
+  "reserveCommittee": {
+    "threshold": 2,
+    "signers": [
+      "0x929953acc4E0D11d012a966e4d9791120319D45F",
+      "0x0C00BAd6005Ce60d6DCC37574486feE7621B55DA",
+      "0xAfd641e6d0a7464C69abddF049abE6c3a0cEA8e9"
+    ]
+  },
+  "contractAddress": "0xbf9e553d406f4ea85fb80cf3636b9c97b5403030",
+  "deploymentTransaction": "0x465d6a1ddd9bb06d8762e6db8f51d3f6dff781b18a2b3af68bbb314c1b2a4356",
+  "deploymentBlock": 4024112,
+  "roundtrip": {
+    "evidenceKind": "cryptographically-replayed-synthetic-corpus",
+    "checkpointRoot": "0x95ce16c0741bd31584fe1b84820173e88a86a032909f31b1531377cd56a12492",
+    "reportedLockedMicroEn": 35,
+    "mintedAndBurnedMicroEn": 10,
+    "reserveTransaction": "0x1d18e770010ff00bcab5455f0f9b9630e183aa17f95ff6e4e5babbda1ade4963",
+    "mintTransaction": "0xa2cb94cf1e983d1bce884e8419204337a7fcf4b968f8bbfd59381e6ab278cbeb",
+    "withdrawalTransaction": "0x7c2a8054f207e7b4d304b93896dcb3b411c3cf03bad7a964904ce6a0e17ed138",
+    "withdrawalId": "0x58a526187bc7e68c3301b85321a86508fc7ae0dacfaecfb3e99146e35c12a268",
+    "finalizeTransaction": "0x6f7196da204112ca4e7621e84648619cbd189467eb9cadb7e99920c72d2df350",
+    "finalizedBlock": 4024121,
+    "finalTotalSupply": 0,
+    "finalDeployerBalance": 0,
+    "solvent": true
+  },
+  "privateKeysStoredInRepository": false
+}
