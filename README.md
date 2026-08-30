@@ -2,7 +2,7 @@
 
 ## FEVM/EVM bridge prototype
 
-`contracts/WrappedEN.sol` is an executable ERC-20 representation of positive EN locked in a dedicated ENGI bridge account. It does not replace ENGI, cannot represent negative balances and cannot mint past an independently reported locked-EN reserve. See `docs/260830-engi-wen-fevm-bridge.md` and run `./scripts/verify-fevm-compat.sh`.
+`contracts/WrappedEN.sol` is an executable ERC-20 representation of positive EN locked in a dedicated ENGI bridge account. It does not replace ENGI, cannot represent negative balances and cannot mint past an independently reported locked-EN reserve. Deposit and withdrawal attestations require an independent bridge threshold committee; reserve checkpoints require a disjoint reserve threshold committee. See `docs/260830-engi-wen-fevm-bridge.md` and run `./scripts/verify-fevm-compat.sh`.
 
 ENGI replaces the centrally issued GCC/credit model. `EN` is an integer
 accounting unit created between participants when a real exchange is signed by
