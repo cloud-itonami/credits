@@ -1,6 +1,6 @@
 (ns credits.engi.relay-main
   "Executable entry point for an independently operated ENGI relay."
-  (:require [clojure.string :as str]
+  (:require [kotoba.lang.text :as str]
             [credits.engi.transport :as transport])
   (:gen-class))
 

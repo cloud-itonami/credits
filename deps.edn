@@ -3,7 +3,12 @@
  ;; unit registry, used ONLY by credits.engi.valueflows -- a read-only
  ;; projection. The kernel (credits.methods.engi) does not depend on it and its
  ;; constitutional boundary is untouched: projection is not admission.
- :deps {;; Retire org.clojure/data.json (JVM maven) for kotoba-lang/json —
+ :deps {
+        ;; kotoba.lang.text, not clojure.string. Pinned as an explicit floor:
+        ;; tools.deps takes the NEWEST sha it is shown, so without a floor here
+        ;; this repo silently rides whatever a sibling happens to name.
+        io.github.kotoba-lang/text {:git/sha "73bdb13ae7a3d004b44bca08be03a3191157a38f"}
+       ;; Retire org.clojure/data.json (JVM maven) for kotoba-lang/json —
         ;; same pattern as kakaku/sukashi/kanae cheshire exit.
         io.github.kotoba-lang/json {:git/sha "1adc364ea7011d1fc8ade6d31a34bbbef76ecefe"}
         io.github.kotoba-lang/ws-valueflo-vocabulary

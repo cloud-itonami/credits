@@ -4,7 +4,7 @@
   A PDS is a discovery and replication substrate only. Consumers recover the
   canonical event and independently verify its content id and signatures."
   (:require [clojure.edn :as edn]
-            [clojure.string :as str]
+            [kotoba.lang.text :as str]
             [credits.engi.codec :as codec]))
 
 (def collection "com.etzhayyim.engi.event")
