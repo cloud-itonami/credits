@@ -4,7 +4,7 @@
   Tokens are supplied by the participant and are never persisted here. PDS
   responses remain untrusted until `atproto/record->event` succeeds."
   (:require [json.compat :as json]
-            [clojure.string :as str]
+            [kotoba.lang.text :as str]
             [credits.engi.atproto :as atproto]
             [credits.engi.codec :as codec])
   (:import (java.net URI URLEncoder)

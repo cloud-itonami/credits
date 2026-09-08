@@ -1,6 +1,6 @@
 (ns credits.engi.audit
   "Reproducible protocol audit bundle."
-  (:require [clojure.string :as str]
+  (:require [kotoba.lang.text :as str]
             [credits.engi.codec :as codec]
             [credits.engi.replay :as replay]
             [credits.methods.engi :as engi]))
