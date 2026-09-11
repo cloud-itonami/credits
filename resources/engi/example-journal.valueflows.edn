@@ -1,6 +1,6 @@
 ;; GENERATED from example-journal.edn by credits.engi.valueflows.
 ;; DO NOT EDIT BY HAND. Regenerate:
-;;   clojure -M:dev -m credits.dev.generate-example-journal
+;;   kbb -M:dev -m credits.dev.generate-example-journal
 ;; credits.engi-valueflows-test re-projects the corpus on every run and
 ;; compares, so a drift in the mapping fails the suite.
 [{:vf.event/onhand-effect "decrementIncrement",

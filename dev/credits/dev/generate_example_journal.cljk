@@ -1,6 +1,6 @@
 ;; Generate resources/engi/example-journal.edn and its Valueflows projection.
 ;;
-;;   clojure -M:dev -m credits.dev.generate-example-journal
+;;   kbb -M:dev -m credits.dev.generate-example-journal
 ;;
 ;; RUN ONCE, THEN COMMIT. This is not a build step: `crypto/generate-keypair`
 ;; is random, so re-running produces different keys and different signatures.
@@ -116,7 +116,7 @@
     (spit "resources/engi/example-journal.valueflows.edn"
           (str ";; GENERATED from example-journal.edn by credits.engi.valueflows.\n"
                ";; DO NOT EDIT BY HAND. Regenerate:\n"
-               ";;   clojure -M:dev -m credits.dev.generate-example-journal\n"
+               ";;   kbb -M:dev -m credits.dev.generate-example-journal\n"
                ";; credits.engi-valueflows-test re-projects the corpus on every run and\n"
                ";; compares, so a drift in the mapping fails the suite.\n"
                (with-out-str (pprint/pprint (:tx-data projected)))))

@@ -75,8 +75,8 @@ and compared on every test run. If the mapping drifts, the suite fails and says
 what to run. Regenerate deliberately with:
 
 ```bash
-clojure -M:dev -m credits.dev.generate-example-journal   # writes both files
-clojure -M:test -n credits.engi-valueflows-test          # 19 tests / 85 assertions
+kbb -M:dev -m credits.dev.generate-example-journal   # writes both files
+kbb -M:test -n credits.engi-valueflows-test          # 19 tests / 85 assertions
 ```
 
 The generator refuses to write anything if the kernel rejects the society it
@@ -91,7 +91,7 @@ verification is injected at the boundary, allowing Ed25519/passkey implementatio
 on devices without making a server authoritative.
 
 ```bash
-bb run_tests.cljk
+kbb run_tests.cljk
 ```
 
 The tests instantiate a small society: participants endorse one another, exchange
@@ -132,7 +132,7 @@ ENGI_RELAY_ID=neighbourhood-a \
 ENGI_RELAY_HOST=127.0.0.1 \
 ENGI_RELAY_PORT=8080 \
 ENGI_RELAY_JOURNAL=/var/lib/engi/events.edn \
-clojure -M:relay
+kbb -M:relay
 ```
 
 `GET /healthz`, `GET /v1/events`, and `POST /v1/events` are the only service

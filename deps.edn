@@ -17,7 +17,7 @@
  :aliases
  {:relay {:main-opts ["-m" "credits.engi.relay-main"]}
   ;; dev/ holds the one-off corpus generator; it is not on the library path.
-  ;; `clojure -M:dev -m credits.dev.generate-example-journal`
+  ;; `kbb -M:dev -m credits.dev.generate-example-journal`
   :dev {:extra-paths ["dev"]}
 
   :test {:extra-paths ["test" "dev"]

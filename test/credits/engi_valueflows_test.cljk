@@ -1,7 +1,7 @@
 (ns credits.engi-valueflows-test
   "Projection of accepted ENGI events onto the Valueflows plane.
 
-   NOTE: run with `clojure -M:test`. The legacy `run_tests.cljk` entry loads
+   NOTE: run with `kbb -M:test`. The legacy `run_tests.cljk` entry loads
    files explicitly with `load-file` and is deliberately NOT extended to cover
    this namespace — it cannot resolve the ws-valueflo-vocabulary git dependency,
    so adding a line there would break that runner rather than test anything."
@@ -226,7 +226,7 @@
   ;; deliberate: regenerate and read the diff.
   (let [fresh (:tx-data (vf/->datoms (:corpus/events corpus)))]
     (is (= committed-projection fresh)
-        "the mapping drifted; run clojure -M:dev -m credits.dev.generate-example-journal and read the diff")
+        "the mapping drifted; run kbb -M:dev -m credits.dev.generate-example-journal and read the diff")
     (is (= 5 (count fresh)) "four economic events and one coverage entity")))
 
 (deftest the-projection-of-the-corpus-agrees-with-the-kernel-about-supply
