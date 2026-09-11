@@ -14,18 +14,18 @@
 
   Measured 2026-08-20, the two runtimes agree exactly on that namespace:
 
-    clojure -M:test -e '(run-tests credits.murakumo-test)'
+    kbb -M:test -e '(run-tests credits.murakumo-test)'
                               Ran 9 tests containing 174 assertions, 0 failures
-    nbb run-tests.cljk            9 tests containing 174 assertions, 0 failures
+    kbb --backend sci run-tests.cljk            9 tests containing 174 assertions, 0 failures
 
   For scale: the whole JVM suite is 70 tests and 432 assertions, so this one
   portable namespace is 9 of the tests but 174 of the assertions.
 
-  The namespace is listed explicitly. clojure -M:test discovers namespaces by
+  The namespace is listed explicitly. kbb -M:test discovers namespaces by
   scanning test/, a cljs runner cannot, and a namespace left off this list
   would silently never run rather than fail.
 
-    nbb --classpath src:test run-tests.cljk"
+    kbb --backend sci --classpath src:test run-tests.cljk"
   (:require [cljs.test :as t]
             [credits.murakumo-test]))
 

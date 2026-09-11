@@ -104,7 +104,7 @@ roundtrip() {
     die "contract bytecode not found"
   key="$(deployer_key)"
 
-  evidence="$(clojure -M:dev -m credits.dev.calibration-bridge-evidence)"
+  evidence="$(kbb -M:dev -m credits.dev.calibration-bridge-evidence)"
   checkpoint_root="$(printf '%s\n' "${evidence}" | awk -F= '/^CHECKPOINT_ROOT=/{print $2}')"
   locked="$(printf '%s\n' "${evidence}" | awk -F= '/^LOCKED_MICRO_EN=/{print $2}')"
   deposit_id="$(printf '%s\n' "${evidence}" | awk -F= '/^DEPOSIT_ID=/{print $2}')"
