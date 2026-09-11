@@ -1,7 +1,7 @@
 (ns credits.engi-valueflows-test
   "Projection of accepted ENGI events onto the Valueflows plane.
 
-   NOTE: run with `clojure -M:test`. The legacy `run_tests.clj` entry loads
+   NOTE: run with `clojure -M:test`. The legacy `run_tests.cljk` entry loads
    files explicitly with `load-file` and is deliberately NOT extended to cover
    this namespace — it cannot resolve the ws-valueflo-vocabulary git dependency,
    so adding a line there would break that runner rather than test anything."
