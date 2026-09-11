@@ -1,5 +1,5 @@
 ;; SYNTHETIC CORPUS -- generated once by
-;; dev/credits/dev/generate_example_journal.clj and committed. Every event here was
+;; dev/credits/dev/generate_example_journal.cljk and committed. Every event here was
 ;; accepted by the real kernel under real Ed25519 verification and a full
 ;; replay, which is what makes it worth committing.
 ;;
@@ -10,7 +10,7 @@
 ;; random), so this file is a fixture, not a build output. What IS
 ;; regenerated on every test run is example-journal.valueflows.edn.
 #:corpus{:synthetic? true,
-         :generated-by "dev/credits/dev/generate_example_journal.clj",
+         :generated-by "dev/credits/dev/generate_example_journal.cljk",
          :state-root
          "en1:95ce16c0741bd31584fe1b84820173e88a86a032909f31b1531377cd56a12492",
          :balances

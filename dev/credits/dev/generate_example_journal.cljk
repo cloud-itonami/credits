@@ -93,7 +93,7 @@
   (let [{:keys [events public-keys state-root balances]} (build)
         projected (vf/->datoms events)
         header (str ";; SYNTHETIC CORPUS -- generated once by\n"
-                    ";; dev/credits/dev/generate_example_journal.clj and committed. Every event here was\n"
+                    ";; dev/credits/dev/generate_example_journal.cljk and committed. Every event here was\n"
                     ";; accepted by the real kernel under real Ed25519 verification and a full\n"
                     ";; replay, which is what makes it worth committing.\n"
                     ";;\n"
@@ -108,7 +108,7 @@
           (str header
                (with-out-str
                  (pprint/pprint {:corpus/synthetic? true
-                                 :corpus/generated-by "dev/credits/dev/generate_example_journal.clj"
+                                 :corpus/generated-by "dev/credits/dev/generate_example_journal.cljk"
                                  :corpus/state-root state-root
                                  :corpus/balances balances
                                  :corpus/public-keys public-keys

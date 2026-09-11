@@ -84,14 +84,14 @@ built, so a corpus can never be committed that the kernel would not accept.
 
 ## Runnable social kernel
 
-[`src/credits/methods/engi.cljc`](src/credits/methods/engi.cljc) is a portable pure state machine. It
+[`src/credits/methods/engi.cljk`](src/credits/methods/engi.cljk) is a portable pure state machine. It
 implements relational credit lines, two-party transfers, nonce replay protection,
 bounded heterogeneous Commons issuance, and replay invariants. Cryptographic
 verification is injected at the boundary, allowing Ed25519/passkey implementations
 on devices without making a server authoritative.
 
 ```bash
-bb run_tests.clj
+bb run_tests.cljk
 ```
 
 The tests instantiate a small society: participants endorse one another, exchange
