@@ -5,7 +5,7 @@
    files explicitly with `load-file` and is deliberately NOT extended to cover
    this namespace — it cannot resolve the ws-valueflo-vocabulary git dependency,
    so adding a line there would break that runner rather than test anything."
-  (:require [clojure.test :refer [deftest is testing]]
+  (:require [kotoba.test :refer [deftest is testing]]
             [clojure.edn :as edn]
             [clojure.java.io :as io]
             [credits.engi.replay :as replay]

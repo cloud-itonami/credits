@@ -1,5 +1,5 @@
 (ns credits.engi-r7-adapters-test
-  (:require [clojure.test :refer [deftest is testing]]
+  (:require [kotoba.test :refer [deftest is testing]]
             [credits.engi.atproto :as atproto]
             [credits.engi.codec :as codec]
             [credits.engi.journal :as journal]

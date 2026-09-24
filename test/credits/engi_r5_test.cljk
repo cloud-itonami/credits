@@ -1,5 +1,5 @@
 (ns credits.engi-r5-test
-  (:require [clojure.test :refer [deftest is testing]]
+  (:require [kotoba.test :refer [deftest is testing]]
             [credits.engi.crypto :as crypto]
             [credits.engi.migration :as migration]
             [credits.engi.netting :as netting]))

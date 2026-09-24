@@ -1,5 +1,5 @@
 (ns credits.engi-r2-test
-  (:require [clojure.test :refer [deftest is testing]]
+  (:require [kotoba.test :refer [deftest is testing]]
             [credits.engi.codec :as codec]
             [credits.engi.crypto :as crypto]
             [credits.engi.identity :as identity]

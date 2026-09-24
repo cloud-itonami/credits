@@ -1,6 +1,6 @@
 (ns credits.engi-at-client-test
   (:require [json.compat :as json]
-            [clojure.test :refer [deftest is testing]]
+            [kotoba.test :refer [deftest is testing]]
             [credits.engi.at-client :as client]
             [credits.engi.atproto :as atproto]
             [credits.engi.codec :as codec])
