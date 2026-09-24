@@ -1,5 +1,5 @@
 (ns credits.engi-r6-test
-  (:require [clojure.java.shell :as shell]
+  (:require [kotoba.bytes :as kbytes] [kotoba.process :as shell]
             [kotoba.test :refer [deftest is]]
             [credits.engi.audit :as audit]
             [credits.engi.benchmark :as benchmark]
@@ -18,7 +18,7 @@
 
 (deftest independent-node-client-verifies-clojure-ed25519
   (let [keypair (crypto/generate-keypair)
-        payload (.getBytes "engi-cross-client" "UTF-8")
+        payload (kbytes/utf8-bytes "engi-cross-client")
         signature (crypto/sign-bytes (:private-key keypair) payload)
         result
         (shell/sh "node" "clients/engi-verify.mjs" "verify"

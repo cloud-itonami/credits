@@ -1,18 +1,17 @@
 (ns credits.engi-at-client-test
-  (:require [json.compat :as json]
+  (:require [kotoba.bytes :as kbytes] [json.compat :as json]
             [kotoba.test :refer [deftest is testing]]
             [credits.engi.at-client :as client]
             [credits.engi.atproto :as atproto]
             [credits.engi.codec :as codec])
   (:import (com.sun.net.httpserver HttpHandler HttpServer)
-           (java.net InetSocketAddress)
-           (java.nio.charset StandardCharsets)))
+           (java.net InetSocketAddress)))
 
 (def pds-event
   (codec/with-event-id {:type :pds-roundtrip :parents [] :value 7}))
 
 (defn response! [exchange status body]
-  (let [bytes (.getBytes (json/generate-string body) StandardCharsets/UTF_8)]
+  (let [bytes (kbytes/utf8-bytes (json/generate-string body))]
     (.set (.getResponseHeaders exchange) "Content-Type" "application/json")
     (.sendResponseHeaders exchange status (alength bytes))
     (with-open [out (.getResponseBody exchange)]

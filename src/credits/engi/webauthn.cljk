@@ -3,9 +3,9 @@
 
   Registration supplies credential id and SPKI public key. No online identity
   provider or etzhayyim service participates in assertion verification."
-  (:require [json.compat :as json]
+  (:require [kotoba.bytes :as kbytes] [json.compat :as json]
             [credits.engi.codec :as codec])
-  (:import (java.nio.charset StandardCharsets)
+  (:import
            (java.security KeyFactory MessageDigest Signature)
            (java.security.spec X509EncodedKeySpec)))
 
@@ -28,7 +28,7 @@
   (try
     (let [client-bytes (codec/base64url-decode (:client-data-json assertion))
           client (json/parse-string
-                  (String. client-bytes StandardCharsets/UTF_8))
+                  (kbytes/utf8-string client-bytes))
           authenticator (codec/base64url-decode
                          (:authenticator-data assertion))
           flags (when (<= 33 (alength authenticator))
@@ -43,7 +43,7 @@
            (= challenge (get client "challenge"))
            (= origin (get client "origin"))
            (not= true (get client "crossOrigin"))
-           (= (seq (sha256 (.getBytes ^String rp-id StandardCharsets/UTF_8)))
+           (= (seq (sha256 (kbytes/utf8-bytes ^String rp-id)))
               (seq rp-hash))
            (some? flags)
            (pos? (bit-and flags 0x01))

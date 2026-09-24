@@ -16,7 +16,7 @@
 ;; says so in its own header.
 
 (ns credits.dev.generate-example-journal
-  (:require [clojure.pprint :as pprint]
+  (:require [kotoba.io :as kio] [kotoba.pprint :as pprint]
             [credits.engi.codec :as codec]
             [credits.engi.crypto :as crypto]
             [credits.engi.replay :as replay]
@@ -103,7 +103,7 @@
                     ";; Regenerating produces different keys and signatures (keypairs are\n"
                     ";; random), so this file is a fixture, not a build output. What IS\n"
                     ";; regenerated on every test run is example-journal.valueflows.edn.\n")]
-    (.mkdirs (java.io.File. "resources/engi"))
+    (kio/mkdirs (kio/file "resources/engi"))
     (spit "resources/engi/example-journal.edn"
           (str header
                (with-out-str

@@ -5,9 +5,9 @@
   nil, booleans, strings, keywords, integers, vectors, and maps. Maps are
   recursively key-sorted. Floats, sets, symbols, tagged values, and lists are
   rejected so two implementations cannot silently encode them differently."
-  (:import (java.nio.charset StandardCharsets)
-           (java.security MessageDigest)
-           (java.util Base64)))
+  (:import
+           (java.security MessageDigest))
+  (:require [kotoba.bytes :as kbytes]))
 
 (def protocol-version 1)
 
@@ -39,7 +39,7 @@
   (pr-str (canonical-value value)))
 
 (defn canonical-bytes [value]
-  (.getBytes ^String (canonical-string value) StandardCharsets/UTF_8))
+  (kbytes/utf8-bytes ^String (canonical-string value)))
 
 (defn hex [^bytes bs]
   (apply str (map #(format "%02x" (bit-and 0xff %)) bs)))
@@ -181,7 +181,7 @@
         (assoc merged :event-id (:id left))))))
 
 (defn base64url [^bytes bs]
-  (.encodeToString (.withoutPadding (Base64/getUrlEncoder)) bs))
+  (kbytes/base64url-encode bs {:pad? false}))
 
 (defn base64url-decode [^String s]
-  (.decode (Base64/getUrlDecoder) s))
+  (kbytes/base64url-decode-bytes s))

@@ -3,18 +3,18 @@
 
   Tokens are supplied by the participant and are never persisted here. PDS
   responses remain untrusted until `atproto/record->event` succeeds."
-  (:require [json.compat :as json]
+  (:require [kotoba.http.form-urlencoded :as form-urlencoded] [json.compat :as json]
             [kotoba.lang.text :as str]
             [credits.engi.atproto :as atproto]
             [credits.engi.codec :as codec])
-  (:import (java.net URI URLEncoder)
+  (:import (java.net URI)
            (java.net.http HttpClient HttpRequest
                           HttpRequest$BodyPublishers HttpResponse$BodyHandlers)
            (java.nio.charset StandardCharsets)
            (java.time Duration)))
 
 (defn- encode [value]
-  (URLEncoder/encode (str value) StandardCharsets/UTF_8))
+  (form-urlencoded/form-encode (str value)))
 
 (defn- query-string [parameters]
   (->> parameters
