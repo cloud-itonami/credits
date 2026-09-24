@@ -2,7 +2,7 @@
   "Verify and print the committed synthetic ENGI evidence used by the
   Filecoin Calibration plumbing test. This never represents production escrow."
   (:require [kotoba.lang.edn :as edn]
-            [clojure.java.io :as io]
+            [kotoba.io :as io]
             [credits.engi.replay :as replay]))
 
 (def test-bridge-did "did:bob")

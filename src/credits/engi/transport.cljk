@@ -3,7 +3,7 @@
 
   The wire service exposes immutable signed events only. It has no endpoint for
   balances, minting, ordering, checkpoints, or conflict resolution."
-  (:require [kotoba.lang.edn :as edn]
+  (:require [kotoba.http.form-urlencoded :as form-urlencoded] [kotoba.bytes :as kbytes] [kotoba.lang.edn :as edn]
             [kotoba.lang.text :as str]
             [credits.engi.codec :as codec]
             [credits.engi.relay :as relay]
@@ -21,7 +21,7 @@
 (def target-batch-bytes (* 900 1024))
 
 (defn- response! [^HttpExchange exchange status body]
-  (let [bytes (.getBytes (codec/canonical-string body) StandardCharsets/UTF_8)]
+  (let [bytes (kbytes/utf8-bytes (codec/canonical-string body))]
     (.set (.getResponseHeaders exchange) "Content-Type"
           "application/edn; charset=utf-8")
     (.sendResponseHeaders exchange status (alength bytes))
@@ -32,16 +32,15 @@
   (with-open [in (.getRequestBody exchange)]
     (let [bytes (.readNBytes in (inc max-request-bytes))]
       (when (<= (alength bytes) max-request-bytes)
-        (String. bytes StandardCharsets/UTF_8)))))
+        (kbytes/utf8-string bytes)))))
 
 (defn- query-values [^URI uri parameter]
   (when-let [query (.getRawQuery uri)]
     (->> (str/split query #"&")
          (keep (fn [part]
                  (when (str/starts-with? part (str parameter "="))
-                   (java.net.URLDecoder/decode
-                    (subs part (inc (count parameter)))
-                    StandardCharsets/UTF_8))))
+                   (form-urlencoded/form-decode
+                    (subs part (inc (count parameter)))))))
          vec)))
 
 (defn- requested-limit [^URI uri]
@@ -206,8 +205,8 @@
      (let [query (str "?limit=" max-page-size
                       (when cursor
                         (str "&cursor="
-                             (java.net.URLEncoder/encode
-                              cursor StandardCharsets/UTF_8))))
+                             (form-urlencoded/form-encode
+                              cursor))))
            page (request "GET" (str base-url "/v1/events" query) nil)
            next-cursor (get-in page [:body :cursor])]
        (cond
@@ -226,8 +225,8 @@
                       (str/join
                        "&"
                        (map #(str "id="
-                                  (java.net.URLEncoder/encode
-                                   % StandardCharsets/UTF_8))
+                                  (form-urlencoded/form-encode
+                                   %))
                             ids)))]
        (request "GET" (str base-url "/v1/events" query) nil))
      (fetch! base-url))))

@@ -1,6 +1,6 @@
 (ns credits.engi-webauthn-test
   (:require [json.compat :as json]
-            [clojure.java.shell :as shell]
+            [kotoba.process :as shell]
             [kotoba.test :refer [deftest is]]
             [credits.engi.codec :as codec]
             [credits.engi.crypto :as crypto]

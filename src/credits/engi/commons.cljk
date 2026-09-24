@@ -1,6 +1,6 @@
 (ns credits.engi.commons
   "Commons proposal, challenge, jury, and appeal state machine."
-  (:require [clojure.set :as set]
+  (:require [kotoba.lang.coll :as set]
             [credits.engi.codec :as codec]
             [credits.engi.crypto :as crypto]))
 
