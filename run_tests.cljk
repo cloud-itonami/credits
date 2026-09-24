@@ -1,4 +1,4 @@
-(require 'clojure.test)
+(require 'kotoba.test)
 (load-file "src/credits/methods/engi.cljk")
 (load-file "methods/test_engi.cljk")
 (load-file "src/credits/engi/codec.cljk")
@@ -34,17 +34,17 @@
   (load-file "test/credits/engi_webauthn_test.cljk")
   (load-file "test/credits/engi_at_client_test.cljk")
   (load-file "test/credits/engi_sync_test.cljk"))
-(let [result (clojure.test/run-tests 'credits.methods.test-engi)]
-  (let [r1-result (clojure.test/run-tests 'credits.engi-r1-test)]
-    (let [r2-result (clojure.test/run-tests 'credits.engi-r2-test)]
-      (let [r3-result (clojure.test/run-tests 'credits.engi-r3-test)]
-        (let [r4-result (clojure.test/run-tests 'credits.engi-r4-test)]
-          (let [r5-result (clojure.test/run-tests 'credits.engi-r5-test)]
-            (let [r6-result (clojure.test/run-tests 'credits.engi-r6-test)]
+(let [result (kotoba.test/run-tests 'credits.methods.test-engi)]
+  (let [r1-result (kotoba.test/run-tests 'credits.engi-r1-test)]
+    (let [r2-result (kotoba.test/run-tests 'credits.engi-r2-test)]
+      (let [r3-result (kotoba.test/run-tests 'credits.engi-r3-test)]
+        (let [r4-result (kotoba.test/run-tests 'credits.engi-r4-test)]
+          (let [r5-result (kotoba.test/run-tests 'credits.engi-r5-test)]
+            (let [r6-result (kotoba.test/run-tests 'credits.engi-r6-test)]
               (let [adapter-result
                     (if (System/getProperty "babashka.version")
                       {:fail 0 :error 0}
-                      (clojure.test/run-tests
+                      (kotoba.test/run-tests
                        'credits.engi-r7-adapters-test
                        'credits.engi-webauthn-test
                        'credits.engi-at-client-test

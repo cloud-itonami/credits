@@ -1,5 +1,5 @@
 (ns credits.engi-sync-test
-  (:require [clojure.test :refer [deftest is]]
+  (:require [kotoba.test :refer [deftest is]]
             [credits.engi.codec :as codec]
             [credits.engi.store :as store]
             [credits.engi.sync :as sync]

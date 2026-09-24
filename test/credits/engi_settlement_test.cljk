@@ -1,7 +1,7 @@
 (ns credits.engi-settlement-test
   (:require [clojure.edn :as edn]
             [clojure.java.io :as io]
-            [clojure.test :refer [deftest is testing]]
+            [kotoba.test :refer [deftest is testing]]
             [credits.engi.replay :as replay]
             [credits.engi.settlement :as settlement]))
 
