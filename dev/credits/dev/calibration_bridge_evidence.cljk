@@ -1,7 +1,7 @@
 (ns credits.dev.calibration-bridge-evidence
   "Verify and print the committed synthetic ENGI evidence used by the
   Filecoin Calibration plumbing test. This never represents production escrow."
-  (:require [clojure.edn :as edn]
+  (:require [kotoba.lang.edn :as edn]
             [clojure.java.io :as io]
             [credits.engi.replay :as replay]))
 

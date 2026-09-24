@@ -3,7 +3,7 @@
 
   The wire service exposes immutable signed events only. It has no endpoint for
   balances, minting, ordering, checkpoints, or conflict resolution."
-  (:require [clojure.edn :as edn]
+  (:require [kotoba.lang.edn :as edn]
             [kotoba.lang.text :as str]
             [credits.engi.codec :as codec]
             [credits.engi.relay :as relay]

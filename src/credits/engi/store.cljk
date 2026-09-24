@@ -5,7 +5,7 @@
   fsynced after each accepted append and collapses revisions by economic event
   id on load. A relay or regional operator never receives write access to a
   participant file; participants export signed events."
-  (:require [clojure.edn :as edn]
+  (:require [kotoba.lang.edn :as edn]
             [clojure.java.io :as io]
             [credits.engi.codec :as codec])
   (:import (java.io FileOutputStream OutputStreamWriter BufferedWriter)
