@@ -1,5 +1,5 @@
 (ns credits.engi-r7-adapters-test
-  (:require [kotoba.test :refer [deftest is testing]]
+  (:require [kotoba.lang.error :as kerror] [kotoba.test :refer [deftest is testing]]
             [credits.engi.atproto :as atproto]
             [credits.engi.codec :as codec]
             [credits.engi.journal :as journal]
@@ -102,7 +102,7 @@
          (:error
           (try
             (relay-main/config-from-env {})
-            (catch clojure.lang.ExceptionInfo e (ex-data e))))))
+            (catch kerror/ExceptionInfo e (ex-data e))))))
   (is (= :invalid-port
          (:error
           (try
@@ -110,7 +110,7 @@
              {"ENGI_RELAY_ID" "x"
               "ENGI_RELAY_JOURNAL" "/tmp/x"
               "ENGI_RELAY_PORT" "70000"})
-            (catch clojure.lang.ExceptionInfo e (ex-data e)))))))
+            (catch kerror/ExceptionInfo e (ex-data e)))))))
 
 (deftest relay-pagination-is-bounded-and-content-deterministic
   (let [events (mapv (fn [value]

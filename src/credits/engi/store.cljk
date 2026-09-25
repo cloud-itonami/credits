@@ -6,14 +6,14 @@
   id on load. A relay or regional operator never receives write access to a
   participant file; participants export signed events."
   (:require [kotoba.lang.edn :as edn]
-            [clojure.java.io :as io]
+            [kotoba.io :as io]
             [credits.engi.codec :as codec])
   (:import (java.io FileOutputStream OutputStreamWriter BufferedWriter)
            (java.nio.charset StandardCharsets)))
 
 (defn load-events [path]
   (let [file (io/file path)]
-    (if-not (.exists file)
+    (if-not (io/exists? file)
       {:ok? true :events []}
       (try
         (with-open [reader (io/reader file)]
@@ -46,8 +46,8 @@
 
 (defn- append-line! [path event]
   (let [file (io/file path)]
-    (when-let [parent (.getParentFile file)]
-      (.mkdirs parent))
+    (when-let [parent (io/parent-file file)]
+      (io/mkdirs parent))
     (with-open [stream (FileOutputStream. file true)
                 writer (BufferedWriter.
                         (OutputStreamWriter.

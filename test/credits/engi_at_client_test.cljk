@@ -1,5 +1,5 @@
 (ns credits.engi-at-client-test
-  (:require [kotoba.bytes :as kbytes] [json.compat :as json]
+  (:require [kotoba.lang.error :as kerror] [kotoba.bytes :as kbytes] [json.compat :as json]
             [kotoba.test :refer [deftest is testing]]
             [credits.engi.at-client :as client]
             [credits.engi.atproto :as atproto]
@@ -139,7 +139,7 @@
              {:service "http://pds.example"
               :access-token "must-not-leak"}
              "did:plc:alice")
-            (catch clojure.lang.ExceptionInfo e
+            (catch kerror/ExceptionInfo e
               (ex-data e)))))))
 
 (deftest pds-proof-enrichment-uses-verified-cid-compare-and-swap

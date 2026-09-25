@@ -1,5 +1,5 @@
 (ns credits.engi-r1-test
-  (:require [kotoba.test :refer [deftest is testing]]
+  (:require [kotoba.lang.error :as kerror] [kotoba.test :refer [deftest is testing]]
             [credits.engi.codec :as codec]
             [credits.engi.crypto :as crypto]
             [credits.engi.replay :as replay]))
@@ -53,9 +53,9 @@
          (codec/canonical-string {:b 2 :a 1})))
   (is (= (codec/event-id {:b 2 :a 1})
          (codec/event-id {:a 1 :b 2})))
-  (is (thrown? clojure.lang.ExceptionInfo
+  (is (thrown? kerror/ExceptionInfo
                (codec/canonical-string {:amount 1.5})))
-  (is (thrown? clojure.lang.ExceptionInfo
+  (is (thrown? kerror/ExceptionInfo
                (codec/canonical-string #{:a :b}))))
 
 (deftest real-ed25519-signatures-round-trip
