@@ -77,4 +77,4 @@ Following must be remediated:
 ## Reference
 
 - ADR-2605192100 / 2605192115 / 2605192200
-- `/CLAUDE.md` § Substrate boundary
+- `/AGENTS.md` § Substrate boundary
